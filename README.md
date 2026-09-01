@@ -1,5 +1,10 @@
 # Pabir Paul's Tuition — Mobile Study App & Private Tuition Portal
 
+<div align="center">
+  <img src="docs/screenshots/mobile_preview.png" alt="Pabir Paul Tuition Mobile App Preview" width="320" style="border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);" />
+  <p><em>Mobile-first learning portal and native Android app for Pabir Paul's Tuition</em></p>
+</div>
+
 A mobile-first, high-security tuition app and learning portal engineered for **Pabir Paul's Tuition**. Designed with controlled content delivery, teacher-verified student admissions, batch-specific enrollment clearance, and layered anti-leak deterrence.
 
 ---
