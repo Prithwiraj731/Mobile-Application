@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Pabir Paul\'s Tuition</string>
+    <string name="title_activity_main">Pabir Paul\'s Tuition</string>
+    <string name="package_name">com.pabirpaul.tuition</string>
+    <string name="custom_url_scheme">com.pabirpaul.tuition</string>
+</resources>

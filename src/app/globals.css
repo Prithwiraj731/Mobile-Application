@@ -1,0 +1,224 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 5%;
+    --foreground: 210 40% 98%;
+    --card: 0 0% 9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 28 95% 54%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 13%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 0 0% 13%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 0 0% 15%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 28 95% 54%;
+    --radius: 1.25rem;
+  }
+}
+
+body {
+  background-color: #0c0a0b;
+  color: #f8fafc;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* ==========================================================================
+   FUTURISTIC KEYFRAME ANIMATIONS
+   ========================================================================== */
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.5deg);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes shimmer-sweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-float {
+  animation: float-slow 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 6s ease-in-out infinite;
+}
+
+/* ==========================================================================
+   VIVID MODERN GRADIENT CARDS & COMPONENTS (From Reference UI)
+   ========================================================================== */
+
+/* Warm Mango / Orange Primary Hero Card */
+.card-featured-hero {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 45%, #c2410c 100%);
+  box-shadow: 0 20px 50px -10px rgba(234, 88, 12, 0.45), 0 0 25px rgba(249, 115, 22, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(16px);
+}
+
+/* Cyan / Sky Vivid Course Card */
+.card-cyan-vivid {
+  background: linear-gradient(145deg, #38bdf8 0%, #0284c7 100%);
+  box-shadow: 0 20px 40px -10px rgba(2, 132, 199, 0.45), 0 0 20px rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* Violet / Purple Vivid Course Card */
+.card-violet-vivid {
+  background: linear-gradient(145deg, #c084fc 0%, #7c3aed 100%);
+  box-shadow: 0 20px 40px -10px rgba(124, 58, 237, 0.45), 0 0 20px rgba(192, 132, 252, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* Emerald Vivid Course Card */
+.card-emerald-vivid {
+  background: linear-gradient(145deg, #34d399 0%, #059669 100%);
+  box-shadow: 0 20px 40px -10px rgba(5, 150, 105, 0.45), 0 0 20px rgba(52, 211, 153, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* Amber / Golden Vivid Course Card */
+.card-amber-vivid {
+  background: linear-gradient(145deg, #fbbf24 0%, #d97706 100%);
+  box-shadow: 0 20px 40px -10px rgba(217, 119, 6, 0.45), 0 0 20px rgba(251, 191, 36, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+/* Modern Dark Glass Card */
+.card-dark-glass {
+  background: rgba(22, 19, 20, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.7);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-dark-glass:hover {
+  background: rgba(28, 24, 26, 0.95);
+  border-color: rgba(249, 115, 22, 0.4);
+  box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.85), 0 0 25px rgba(249, 115, 22, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Warm Mango / Orange Primary Button */
+.btn-mango {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 50%, #ea580c 100%);
+  color: #ffffff;
+  font-weight: 800;
+  box-shadow: 0 10px 25px -3px rgba(249, 115, 22, 0.5);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-mango:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 14px 32px -2px rgba(249, 115, 22, 0.65);
+  transform: translateY(-1px);
+}
+
+.btn-mango:active {
+  transform: scale(0.98);
+}
+
+/* Floating Bottom Dock Navigation */
+.pill-dock {
+  background: rgba(18, 16, 17, 0.92);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.95), 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Search Pill Input */
+.search-pill {
+  background: #181516;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease-in-out;
+}
+
+.search-pill:focus-within {
+  border-color: rgba(249, 115, 22, 0.55);
+  background: #1c191a;
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35), inset 0 2px 5px rgba(0, 0, 0, 0.5), 0 0 20px rgba(249, 115, 22, 0.15);
+}
+
+/* Glass Float 3D Tile */
+.glass-float-tile {
+  background: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+/* ==========================================================================
+   SECURITY LAYER
+   ========================================================================== */
+
+@media print {
+  html, body {
+    display: none !important;
+    visibility: hidden !important;
+  }
+}
+
+.secure-protected-area {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0c0a0b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #252123;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3d373a;
+}
