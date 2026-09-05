@@ -63,12 +63,38 @@ export default async function StudentLayout({
       }
     }
   } catch {
-    profile = MOCK_USERS[1]; // Aarav Sharma (Free Student)
+    profile = {
+      id: "guest-student",
+      full_name: "Enrolled Student",
+      email: "student@debrajtuition.com",
+      phone_number: "+91 90000 00000",
+      address: "Commerce Batch",
+      role: "student" as const,
+      status: "approved" as const,
+      avatar_url: null,
+      rejection_reason: null,
+      planCode: "FREE" as const,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
     planCode = "FREE";
   }
 
   if (!profile) {
-    profile = MOCK_USERS[1];
+    profile = {
+      id: "guest-student",
+      full_name: "Enrolled Student",
+      email: "student@debrajtuition.com",
+      phone_number: "+91 90000 00000",
+      address: "Commerce Batch",
+      role: "student" as const,
+      status: "approved" as const,
+      avatar_url: null,
+      rejection_reason: null,
+      planCode: "FREE" as const,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
   }
 
   return (

@@ -26,7 +26,7 @@ import { PlanBadge } from "@/components/student/PlanBadge";
 import { SecureViewerModal } from "@/components/secure-viewer/SecureViewerModal";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import { MOCK_COURSES, MOCK_MATERIALS, MOCK_USERS, COMMERCE_PROGRAMS } from "@/lib/mock-data";
+import { MOCK_COURSES, MOCK_MATERIALS, COMMERCE_PROGRAMS } from "@/lib/mock-data";
 import { MaterialWithDetails } from "@/types";
 
 export default function StudentDashboardPage() {
@@ -63,16 +63,14 @@ export default function StudentDashboardPage() {
         setWatermarkText(data.watermarkText || `Student • ${new Date().toLocaleDateString()} • Session #SEC-LIVE`);
         setSessionTraceId(data.sessionTraceId || "SEC-DEV-TRACER");
       } else {
-        const student = MOCK_USERS[userPlanRank === 1 ? 1 : userPlanRank === 2 ? 2 : 3];
         const trace = `SEC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
         setPreviewToken(material.file?.file_path ? `/api/preview/${material.id}/stream` : undefined);
-        setWatermarkText(`${student.full_name} • ${student.email} • Pabir Paul's Tuition • ${new Date().toLocaleDateString()} • Session #${trace}`);
+        setWatermarkText(`Verified Student • Pabir Paul Tuition • ${new Date().toLocaleDateString()} • Session #${trace}`);
         setSessionTraceId(trace);
       }
     } catch {
-      const student = MOCK_USERS[userPlanRank === 1 ? 1 : userPlanRank === 2 ? 2 : 3];
       const trace = `SEC-${Date.now().toString(36).toUpperCase()}`;
-      setWatermarkText(`${student.full_name} • ${student.email} • Pabir Paul's Tuition • Session #${trace}`);
+      setWatermarkText(`Verified Student • Pabir Paul Tuition • Session #${trace}`);
       setSessionTraceId(trace);
     }
 
@@ -108,7 +106,7 @@ export default function StudentDashboardPage() {
       try {
         const res = await fetch("/api/materials");
         const data = await res.json();
-        if (res.ok && data.materials && data.materials.length > 0) {
+        if (res.ok && Array.isArray(data.materials)) {
           setMaterials(data.materials);
         }
       } catch {
@@ -413,17 +411,31 @@ export default function StudentDashboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredMaterials.map((material) => (
-            <MaterialCard
-              key={material.id}
-              material={material}
-              userPlanRank={userPlanRank}
-              onOpenPreview={handleOpenPreview}
-              onUpgradePrompt={handleUpgradePrompt}
-            />
-          ))}
-        </div>
+        {filteredMaterials.length === 0 ? (
+          <div className="rounded-3xl bg-[#181516]/60 border border-white/5 p-8 text-center space-y-3">
+            <div className="h-12 w-12 rounded-2xl bg-orange-500/10 text-orange-400 border border-orange-500/20 flex items-center justify-center mx-auto">
+              <FileSpreadsheet className="h-6 w-6" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-white">No Study Materials Published Yet</p>
+              <p className="text-xs text-surface-400 max-w-sm mx-auto">
+                New lecture notes, PDF scanners, and audio lectures uploaded by the faculty will appear here immediately once published.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredMaterials.map((material) => (
+              <MaterialCard
+                key={material.id}
+                material={material}
+                userPlanRank={userPlanRank}
+                onOpenPreview={handleOpenPreview}
+                onUpgradePrompt={handleUpgradePrompt}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Secure Viewer Modal */}

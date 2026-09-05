@@ -60,10 +60,10 @@ export function AdminHeader({ profile }: AdminHeaderProps) {
           </div>
           <div className="hidden md:block text-left">
             <p className="text-xs font-semibold text-white">
-              {profile?.full_name || "Pabir Paul (Admin)"}
+              {profile?.full_name || "Pabir Paul (Faculty Admin)"}
             </p>
             <p className="text-[10px] text-surface-400 font-mono">
-              {profile?.email || "admin@pabirpaul.io"}
+              {profile?.email || "admin@debrajtuition.com"}
             </p>
           </div>
 

@@ -2,13 +2,23 @@
 
 import * as React from "react";
 import { Crown, Sparkles, Shield, Check, Users, Edit3, Plus, CheckCircle2 } from "lucide-react";
-import { MOCK_PLANS, MOCK_USERS } from "@/lib/mock-data";
+import { MOCK_PLANS } from "@/lib/mock-data";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PlanBadge } from "@/components/student/PlanBadge";
 
 export default function AdminSubscriptionsPage() {
   const [plans, setPlans] = React.useState(MOCK_PLANS);
+  const [users, setUsers] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    fetch("/api/admin/users")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.users) setUsers(data.users);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
@@ -29,7 +39,7 @@ export default function AdminSubscriptionsPage() {
       {/* Plan Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {plans.map((plan) => {
-          const userCount = MOCK_USERS.filter((u) => u.planCode === plan.code).length;
+          const userCount = users.filter((u) => u.planCode === plan.code && u.role === "student").length;
           return (
             <div
               key={plan.id}

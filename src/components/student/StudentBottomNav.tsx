@@ -107,15 +107,15 @@ export function StudentBottomNav({ profile, planCode = "FREE" }: StudentBottomNa
             <div className="flex items-center gap-3 pt-1">
               <div className="h-12 w-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 p-[1.5px] shrink-0">
                 <div className="h-full w-full rounded-2xl bg-[#181516] flex items-center justify-center text-lg font-bold text-amber-400">
-                  {profile?.full_name?.charAt(0) || "A"}
+                  {profile?.full_name?.charAt(0) || "S"}
                 </div>
               </div>
               <div className="min-w-0 flex-1 space-y-0.5">
                 <h4 className="text-sm font-bold text-white truncate">
-                  {profile?.full_name || "Aarav Sharma"}
+                  {profile?.full_name || "Enrolled Student"}
                 </h4>
                 <p className="text-xs text-surface-400 truncate font-mono">
-                  {profile?.email || "student.free@example.com"}
+                  {profile?.email || "student@debrajtuition.com"}
                 </p>
                 <div className="pt-1">
                   <PlanBadge planCode={planCode} size="sm" />

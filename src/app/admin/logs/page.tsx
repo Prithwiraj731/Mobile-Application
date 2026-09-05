@@ -67,37 +67,45 @@ export default function AdminLogsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-800/60 font-mono">
-                {MOCK_ACCESS_LOGS.map((log) => (
-                  <tr key={log.id} className="hover:bg-surface-800/40 transition-colors">
-                    <td className="px-5 py-3.5 text-surface-400 text-[11px]">
-                      {new Date(log.created_at).toLocaleString()}
-                    </td>
-                    <td className="px-5 py-3.5">
-                      {log.action === "unauthorized_attempt" ? (
-                        <span className="text-rose-400 font-bold bg-rose-950/60 border border-rose-800/60 px-2 py-0.5 rounded text-[10px]">
-                          UNAUTHORIZED ATTEMPT
-                        </span>
-                      ) : (
-                        <span className="text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded text-[10px]">
-                          AUTHORIZED PREVIEW
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-5 py-3.5 font-sans font-medium text-white">
-                      {log.user_id}
-                    </td>
-                    <td className="px-5 py-3.5 text-indigo-300 font-bold text-[11px]">
-                      {log.session_id || "BLOCKED"}
-                    </td>
-                    <td className="px-5 py-3.5 text-[11px] text-surface-400">
-                      <div>IP: {log.ip_address}</div>
-                      <div className="text-[10px] text-surface-500 truncate max-w-xs">{log.user_agent}</div>
-                    </td>
-                    <td className="px-5 py-3.5 text-[10px] text-surface-300 truncate max-w-xs font-sans">
-                      {log.watermark_text || "None (Authorization Rejected)"}
+                {MOCK_ACCESS_LOGS.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-8 text-center text-surface-500 font-sans text-xs">
+                      No forensic access logs recorded yet. Logs are automatically captured whenever students launch encrypted preview sessions.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  MOCK_ACCESS_LOGS.map((log) => (
+                    <tr key={log.id} className="hover:bg-surface-800/40 transition-colors">
+                      <td className="px-5 py-3.5 text-surface-400 text-[11px]">
+                        {new Date(log.created_at).toLocaleString()}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {log.action === "unauthorized_attempt" ? (
+                          <span className="text-rose-400 font-bold bg-rose-950/60 border border-rose-800/60 px-2 py-0.5 rounded text-[10px]">
+                            UNAUTHORIZED ATTEMPT
+                          </span>
+                        ) : (
+                          <span className="text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded text-[10px]">
+                            AUTHORIZED PREVIEW
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 font-sans font-medium text-white">
+                        {log.user_id}
+                      </td>
+                      <td className="px-5 py-3.5 text-indigo-300 font-bold text-[11px]">
+                        {log.session_id || "BLOCKED"}
+                      </td>
+                      <td className="px-5 py-3.5 text-[11px] text-surface-400">
+                        <div>IP: {log.ip_address}</div>
+                        <div className="text-[10px] text-surface-500 truncate max-w-xs">{log.user_agent}</div>
+                      </td>
+                      <td className="px-5 py-3.5 text-[10px] text-surface-300 truncate max-w-xs font-sans">
+                        {log.watermark_text || "None (Authorization Rejected)"}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -119,27 +127,35 @@ export default function AdminLogsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-800/60 font-mono">
-                {MOCK_AUDIT_LOGS.map((log) => (
-                  <tr key={log.id} className="hover:bg-surface-800/40 transition-colors">
-                    <td className="px-5 py-3.5 text-surface-400 text-[11px]">
-                      {new Date(log.created_at).toLocaleString()}
-                    </td>
-                    <td className="px-5 py-3.5 font-sans font-semibold text-rose-300">
-                      Chief Administrator ({log.admin_id})
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="bg-surface-800 px-2 py-0.5 rounded text-white border border-surface-700 uppercase font-semibold text-[10px]">
-                        {log.action.replace("_", " ")}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3.5 text-surface-400 text-[11px]">
-                      {log.target_user_id || log.target_material_id || "System"}
-                    </td>
-                    <td className="px-5 py-3.5 text-[11px] text-surface-300 font-sans">
-                      {JSON.stringify(log.details)}
+                {MOCK_AUDIT_LOGS.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-5 py-8 text-center text-surface-500 font-sans text-xs">
+                      No administrator audit actions recorded yet. Approval and account decisions will appear here.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  MOCK_AUDIT_LOGS.map((log) => (
+                    <tr key={log.id} className="hover:bg-surface-800/40 transition-colors">
+                      <td className="px-5 py-3.5 text-surface-400 text-[11px]">
+                        {new Date(log.created_at).toLocaleString()}
+                      </td>
+                      <td className="px-5 py-3.5 font-sans font-semibold text-rose-300">
+                        Chief Administrator ({log.admin_id})
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className="bg-surface-800 px-2 py-0.5 rounded text-white border border-surface-700 uppercase font-semibold text-[10px]">
+                          {log.action.replace("_", " ")}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-surface-400 text-[11px]">
+                        {log.target_user_id || log.target_material_id || "System"}
+                      </td>
+                      <td className="px-5 py-3.5 text-[11px] text-surface-300 font-sans">
+                        {JSON.stringify(log.details)}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

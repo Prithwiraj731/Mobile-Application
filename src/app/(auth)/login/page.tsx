@@ -3,13 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { GraduationCap, ShieldCheck, ArrowRight, Lock, AlertCircle, Sparkles, Clock } from "lucide-react";
-import { MOCK_USERS } from "@/lib/mock-data";
+import { GraduationCap, ShieldCheck, ArrowRight, Lock, AlertCircle, Clock } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = React.useState("student.free@example.com");
-  const [password, setPassword] = React.useState("Student@123");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [isPendingApproval, setIsPendingApproval] = React.useState(false);
@@ -58,12 +57,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleSelectMock = (user: (typeof MOCK_USERS)[0]) => {
-    setEmail(user.email);
-    setPassword(user.demoPassword);
-    setError(null);
-    setIsPendingApproval(false);
-  };
+
 
   return (
     <div className="min-h-screen bg-[#0c0a0b] flex flex-col justify-center items-center p-4 sm:p-6 text-surface-100 pb-16 relative overflow-hidden">
@@ -188,43 +182,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* 1-Click Evaluation Switcher */}
-        <div className="rounded-3xl bg-[#181516]/80 p-5 space-y-3 border border-white/10 shadow-lg">
-          <div className="flex items-center justify-between text-xs font-bold text-surface-300">
-            <div className="flex items-center gap-1.5 text-amber-400">
-              <Sparkles className="h-4 w-4" />
-              <span>1-Click Test Accounts</span>
-            </div>
-            <span className="text-[10px] text-surface-500 font-mono">Instant Credentials</span>
-          </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            {MOCK_USERS.map((u) => {
-              const isSelected = email === u.email;
-              const isInstructor = u.role === "admin";
-              const isPremium = u.planCode === "PREMIUM";
-
-              return (
-                <button
-                  key={u.id}
-                  onClick={() => handleSelectMock(u)}
-                  className={`flex flex-col text-left p-3 rounded-2xl border text-xs transition-all duration-200 active:scale-95 ${
-                    isSelected
-                      ? isInstructor
-                        ? "border-amber-400 bg-amber-500/15 text-white shadow-lg"
-                        : "border-orange-500 bg-orange-500/15 text-white shadow-lg"
-                      : "border-white/5 bg-[#0c0a0b]/80 text-surface-400 hover:border-white/20 hover:text-surface-200"
-                  }`}
-                >
-                  <span className="font-bold text-surface-100 truncate">{u.full_name}</span>
-                  <span className="text-[10px] text-surface-400 capitalize font-mono mt-0.5">
-                    {isInstructor ? "⭐ Faculty Admin" : isPremium ? "👑 VIP Scholar" : `${u.planCode} Student`}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ChevronRight, ArrowLeft, BookOpen, Sparkles, CheckCircle2, Play } from "lucide-react";
-import { MOCK_COURSES, MOCK_MATERIALS, MOCK_USERS } from "@/lib/mock-data";
+import { MOCK_COURSES, MOCK_MATERIALS } from "@/lib/mock-data";
 import { MaterialCard } from "@/components/student/MaterialCard";
 import { SecureViewerModal } from "@/components/secure-viewer/SecureViewerModal";
 import { MaterialWithDetails } from "@/types";
@@ -25,7 +25,7 @@ export default function CourseDetailPage() {
     fetch("/api/materials")
       .then((res) => res.json())
       .then((data) => {
-        if (data.materials && data.materials.length > 0) {
+        if (data.materials && Array.isArray(data.materials)) {
           setCourseMaterials(data.materials);
         }
       })
@@ -89,17 +89,23 @@ export default function CourseDetailPage() {
           Structured Course Modules
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {courseMaterials.map((mat) => (
-            <MaterialCard
-              key={mat.id}
-              material={mat}
-              userPlanRank={2} // Pro tier clearance
-              onOpenPreview={handleOpenPreview}
-              onUpgradePrompt={() => alert("Please upgrade your plan to access this resource.")}
-            />
-          ))}
-        </div>
+        {courseMaterials.length === 0 ? (
+          <div className="rounded-3xl bg-[#181516]/60 border border-white/5 p-8 text-center text-xs text-surface-400">
+            No study materials published for this course yet. Once uploaded by faculty, they will appear here.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {courseMaterials.map((mat) => (
+              <MaterialCard
+                key={mat.id}
+                material={mat}
+                userPlanRank={2} // Pro tier clearance
+                onOpenPreview={handleOpenPreview}
+                onUpgradePrompt={() => alert("Please upgrade your plan to access this resource.")}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Secure Viewer Modal */}

@@ -22,7 +22,7 @@ export function StudentHeader({ profile, planCode = "FREE" }: StudentHeaderProps
     router.push("/login");
   };
 
-  const displayName = profile?.full_name?.split(" ")[0] || "Aarav";
+  const displayName = profile?.full_name?.split(" ")[0] || "Student";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between px-4 sm:px-6 py-3 bg-[#0d0c0d]/90 backdrop-blur-xl border-b border-white/5">
@@ -43,7 +43,7 @@ export function StudentHeader({ profile, planCode = "FREE" }: StudentHeaderProps
 
         <div>
           <h2 className="font-bold text-sm text-white tracking-tight leading-tight group-hover:text-amber-400 transition-colors">
-            {profile?.full_name || "Aarav Sharma"}
+            {profile?.full_name || "Enrolled Student"}
           </h2>
           <p className="text-[11px] text-surface-400 font-medium capitalize">
             {profile?.role === "admin" ? "Lead Instructor" : "Student"}

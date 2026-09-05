@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { MOCK_USERS, MOCK_MATERIALS, MOCK_COURSES } from "./mock-data";
+import { MOCK_USERS, MOCK_COURSES } from "./mock-data";
 import { MaterialWithDetails, Profile, AccessLevel, MaterialType } from "@/types";
 
 export interface StoredUser extends Profile {
@@ -30,30 +30,9 @@ function ensureDirectories() {
 
 // Initial seed builder
 function getInitialData(): AppDataSchema {
-  const usersWithAdmin: StoredUser[] = [...MOCK_USERS];
-  
-  // Also ensure admin@securelearn.io exists for standard testing credentials
-  if (!usersWithAdmin.some((u) => u.email.toLowerCase() === "admin@securelearn.io")) {
-    usersWithAdmin.push({
-      id: "u-admin-002",
-      full_name: "Chief Academic Administrator",
-      email: "admin@securelearn.io",
-      phone_number: "+91 98765 00002",
-      address: "Pabir Paul Tuition Admin Bureau",
-      role: "admin",
-      status: "approved",
-      avatar_url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      rejection_reason: null,
-      planCode: "PREMIUM",
-      demoPassword: "Admin@123456",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
-  }
-
   return {
-    users: usersWithAdmin,
-    materials: [...MOCK_MATERIALS],
+    users: [...MOCK_USERS],
+    materials: [],
     lastUpdated: new Date().toISOString(),
   };
 }
@@ -162,7 +141,7 @@ export const DataStore = {
       avatar_url: null,
       rejection_reason: null,
       planCode: params.planCode || "FREE",
-      demoPassword: params.password || "Student@123",
+      demoPassword: params.password || "",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
