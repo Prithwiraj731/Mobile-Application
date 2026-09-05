@@ -11,15 +11,10 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/_next") ||
     path === "/favicon.ico" ||
     path === "/manifest.json" ||
-    path.startsWith("/api/") ||
     path.startsWith("/uploads/") ||
-    path.includes(".")
+    /\.(?:css|js|png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf|eot)$/i.test(path)
   ) {
-    return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+    return NextResponse.next();
   }
 
   let response = NextResponse.next({
@@ -75,7 +70,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/login") ||
     path.startsWith("/signup") ||
     path.startsWith("/pending") ||
-    path.startsWith("/api/auth");
+    path.startsWith("/api/");
 
   // 3. Unauthenticated users attempting to access protected student or admin paths
   if (!effectiveUser && !isPublicRoute) {
@@ -101,8 +96,8 @@ export async function updateSession(request: NextRequest) {
       status = profile?.status || "pending_approval";
     }
 
-    // Handle Pending / Suspended / Rejected accounts
-    if (status !== "approved" && !path.startsWith("/pending") && !path.startsWith("/api/auth")) {
+    // Handle Pending / Suspended / Rejected accounts (for UI page visits)
+    if (status !== "approved" && !path.startsWith("/pending") && !path.startsWith("/api/")) {
       const url = request.nextUrl.clone();
       url.pathname = "/pending";
       url.searchParams.set("status", status);

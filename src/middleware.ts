@@ -11,10 +11,9 @@ export const config = {
      * Match all request paths except for:
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - manifest.json
-     * - static assets with extensions
+     * - favicon.ico, manifest.json
+     * - Any asset with a file extension (.css, .js, .png, etc.)
      */
-    "/((?!_next/static|_next/image|favicon.ico|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|css|js|woff|woff2|ttf|eot)$).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.json|.*\\.[\\w]+$).*)",
   ],
 };

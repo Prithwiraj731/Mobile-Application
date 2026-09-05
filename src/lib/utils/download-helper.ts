@@ -1,6 +1,7 @@
 /**
  * Cross-platform helper to reliably download study materials
- * Works across desktop browsers, mobile Chrome/Safari, and Android WebViews.
+ * Works seamlessly across Android Native WebView (Capacitor/Java bridge),
+ * mobile browsers (Chrome/Safari), and desktop web browsers.
  */
 export async function downloadMaterialFile(
   materialId: string,
@@ -9,7 +10,7 @@ export async function downloadMaterialFile(
   try {
     const downloadUrl = `/api/materials/${materialId}/download`;
 
-    // 1. Fetch file directly in browser memory (passes cookies and auth headers)
+    // 1. Fetch file directly in memory (passes cookies and auth headers)
     const response = await fetch(downloadUrl);
     if (!response.ok) {
       throw new Error(`Download failed with status ${response.status}`);
@@ -29,11 +30,31 @@ export async function downloadMaterialFile(
       }
     }
 
-    // 2. Create blob URL
+    const mimeType = response.headers.get("Content-Type") || "application/pdf";
     const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
 
-    // 3. Programmatically trigger native download
+    // 2. Native Android App Bridge Check (Capacitor Android WebView)
+    const androidBridge = typeof window !== "undefined" ? (window as any).AndroidBridge : null;
+    if (androidBridge && typeof androidBridge.saveFile === "function") {
+      return new Promise<boolean>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          try {
+            const base64Data = reader.result as string;
+            const success = androidBridge.saveFile(base64Data, finalFilename, mimeType);
+            resolve(Boolean(success));
+          } catch (bridgeErr) {
+            console.warn("AndroidBridge execution error:", bridgeErr);
+            resolve(false);
+          }
+        };
+        reader.onerror = () => resolve(false);
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    // 3. Programmatically trigger native download in Web Browsers (Chrome, Firefox, Safari, Edge)
+    const blobUrl = window.URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.style.display = "none";
     anchor.href = blobUrl;
@@ -52,8 +73,9 @@ export async function downloadMaterialFile(
     return true;
   } catch (error) {
     console.warn("Client blob download encountered an error, falling back to direct navigation:", error);
-    // Fallback: direct window.location.href or window.open
-    window.open(`/api/materials/${materialId}/download`, "_blank");
+    if (typeof window !== "undefined") {
+      window.open(`/api/materials/${materialId}/download`, "_blank");
+    }
     return true;
   }
 }
