@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { DataStore } from "@/lib/data-store";
 import { createClient } from "@/lib/supabase/server";
-import { MOCK_USERS } from "@/lib/mock-data";
 import { Profile } from "@/types";
 
 export async function POST(request: Request) {
@@ -12,76 +12,137 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Sign in with Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // 1. Check DataStore first (persistent local / cached accounts)
+    const storedUser = DataStore.getUserByEmail(cleanEmail);
 
-    if (authError || !authData?.user) {
-      // Check mock users for seamless demo evaluation
-      const mock = MOCK_USERS.find(
-        (u) => u.email.toLowerCase() === email.toLowerCase() && u.demoPassword === password
-      );
+    if (storedUser) {
+      // Validate password if user has demoPassword recorded
+      if (storedUser.demoPassword && storedUser.demoPassword !== password) {
+        return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
+      }
 
-      if (mock) {
+      // Check account approval status
+      if (storedUser.status === "pending_approval") {
+        return NextResponse.json(
+          {
+            error:
+              "Your account is pending admin approval. You will be able to log in once the faculty verifies and approves your registration.",
+            status: "pending_approval",
+          },
+          { status: 403 }
+        );
+      }
+
+      if (storedUser.status === "rejected") {
+        return NextResponse.json(
+          {
+            error: "Your admission application was not approved by the faculty.",
+            status: "rejected",
+          },
+          { status: 403 }
+        );
+      }
+
+      if (storedUser.status === "suspended") {
+        return NextResponse.json(
+          {
+            error: "Your student account has been suspended. Please contact tuition administration.",
+            status: "suspended",
+          },
+          { status: 403 }
+        );
+      }
+
+      // User is approved! Create session cookie
+      const sessionPayload = {
+        id: storedUser.id,
+        email: storedUser.email,
+        full_name: storedUser.full_name,
+        role: storedUser.role,
+        status: storedUser.status,
+        planCode: storedUser.planCode || "FREE",
+      };
+
+      const response = NextResponse.json({
+        success: true,
+        user: { id: storedUser.id, email: storedUser.email, full_name: storedUser.full_name },
+        role: storedUser.role,
+        status: storedUser.status,
+        planCode: storedUser.planCode || "FREE",
+      });
+
+      response.cookies.set("demo_user_session", JSON.stringify(sessionPayload), {
+        path: "/",
+        httpOnly: false,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+      });
+
+      return response;
+    }
+
+    // 2. If not in local DataStore, try Supabase Auth
+    try {
+      const supabase = await createClient();
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: cleanEmail,
+        password,
+      });
+
+      if (!authError && authData?.user) {
+        const user = authData.user;
+        const { data: profile } = (await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle()) as { data: Profile | null };
+
+        const role = profile?.role || "student";
+        const status = profile?.status || "pending_approval";
+
+        if (status === "pending_approval" && role === "student") {
+          return NextResponse.json(
+            {
+              error:
+                "Your account is pending admin approval. You will be able to log in once faculty verifies and approves your registration.",
+              status: "pending_approval",
+            },
+            { status: 403 }
+          );
+        }
+
+        const sessionPayload = {
+          id: user.id,
+          email: user.email,
+          full_name: profile?.full_name || user.email?.split("@")[0],
+          role,
+          status,
+          planCode: "FREE",
+        };
+
         const response = NextResponse.json({
           success: true,
-          user: { id: mock.id, email: mock.email, full_name: mock.full_name },
-          role: mock.role,
-          status: mock.status,
-          planCode: mock.planCode,
+          user: { id: user.id, email: user.email, full_name: profile?.full_name },
+          role,
+          status,
         });
 
-        // Set demo session cookie for middleware and server components
-        response.cookies.set(
-          "demo_user_session",
-          JSON.stringify({
-            id: mock.id,
-            email: mock.email,
-            full_name: mock.full_name,
-            role: mock.role,
-            status: mock.status,
-            planCode: mock.planCode,
-          }),
-          {
-            path: "/",
-            httpOnly: false,
-            sameSite: "lax",
-            maxAge: 60 * 60 * 24 * 7, // 7 days
-          }
-        );
+        response.cookies.set("demo_user_session", JSON.stringify(sessionPayload), {
+          path: "/",
+          httpOnly: false,
+          sameSite: "lax",
+          maxAge: 60 * 60 * 24 * 7,
+        });
 
         return response;
       }
-
-      return NextResponse.json({ error: authError?.message || "Invalid credentials." }, { status: 401 });
+    } catch {
+      // Supabase is offline or mock
     }
 
-    const user = authData.user;
-
-    // 2. Fetch Profile details
-    const { data: profile } = (await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle()) as { data: Profile | null };
-
-    const role = profile?.role || "student";
-    const status = profile?.status || "pending_approval";
-
-    const response = NextResponse.json({
-      success: true,
-      user: { id: user.id, email: user.email, full_name: profile?.full_name },
-      role,
-      status,
-    });
-
-    response.cookies.delete("demo_user_session");
-
-    return response;
+    return NextResponse.json({ error: "Invalid email or password." }, { status: 401 });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || "Login failed." }, { status: 500 });
   }

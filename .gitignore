@@ -53,3 +53,9 @@ android/*.iml
 android/app/*.iml
 *.apk
 *.aab
+
+# Local runtime data & uploads
+data/*.json
+public/uploads/*
+!public/uploads/.gitkeep
+!data/.gitkeep

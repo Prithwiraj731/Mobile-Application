@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
+import { DataStore } from "@/lib/data-store";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { fullName, email, password, phoneNumber, address } = body;
+    const { fullName, email, password, confirmPassword, phoneNumber, address } = body;
 
+    // Validation
     if (!fullName || !email || !password) {
       return NextResponse.json(
         { error: "Full name, email, and password are required." },
@@ -14,51 +16,88 @@ export async function POST(request: Request) {
       );
     }
 
-    const supabase = await createClient();
-    const admin = createAdminClient();
+    if (confirmPassword !== undefined && password !== confirmPassword) {
+      return NextResponse.json(
+        { error: "Passwords do not match. Please verify both fields." },
+        { status: 400 }
+      );
+    }
 
-    // 1. Sign up user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email,
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: "Password must be at least 6 characters long." },
+        { status: 400 }
+      );
+    }
+
+    // 1. Check if user exists in DataStore
+    const existing = DataStore.getUserByEmail(email);
+    if (existing) {
+      return NextResponse.json(
+        { error: "An account with this email is already registered." },
+        { status: 409 }
+      );
+    }
+
+    // 2. Register into DataStore with pending_approval
+    const newUser = DataStore.createUser({
+      fullName: fullName.trim(),
+      email: email.trim().toLowerCase(),
       password,
-      options: {
-        data: {
+      phoneNumber: phoneNumber?.trim(),
+      address: address?.trim(),
+      role: "student",
+      status: "pending_approval",
+    });
+
+    // 3. Attempt Supabase Auth sync in background if configured
+    try {
+      const supabase = await createClient();
+      const admin = createAdminClient();
+      const { data: authData } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone_number: phoneNumber || null,
+            address: address || null,
+            role: "student",
+          },
+        },
+      });
+
+      if (authData.user) {
+        await admin.from("profiles").upsert({
+          id: authData.user.id,
           full_name: fullName,
+          email,
           phone_number: phoneNumber || null,
           address: address || null,
           role: "student",
-        },
-      },
-    });
-
-    if (authError) {
-      return NextResponse.json({ error: authError.message }, { status: 400 });
-    }
-
-    const userId = authData.user?.id;
-
-    if (userId) {
-      // 2. Ensure profile is saved with 'pending_approval'
-      await admin.from("profiles").upsert({
-        id: userId,
-        full_name: fullName,
-        email,
-        phone_number: phoneNumber || null,
-        address: address || null,
-        role: "student",
-        status: "pending_approval",
-        updated_at: new Date().toISOString(),
-      });
+          status: "pending_approval",
+          updated_at: new Date().toISOString(),
+        });
+      }
+    } catch {
+      // Supabase is offline or mock, local persistence handles it cleanly
     }
 
     return NextResponse.json({
       success: true,
-      message: "Registration submitted successfully. Awaiting administrative approval.",
+      user: {
+        id: newUser.id,
+        fullName: newUser.full_name,
+        email: newUser.email,
+        status: newUser.status,
+      },
+      message:
+        "Thanks for registering! Your application has been submitted to the admin for review. Once approved, you will be able to log in to access all notes, audios, and study materials.",
       status: "pending_approval",
     });
   } catch (err: any) {
     return NextResponse.json(
-      { error: err.message || "Internal registration error." },
+      { error: err.message || "Registration failed. Please try again." },
       { status: 500 }
     );
   }

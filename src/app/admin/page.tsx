@@ -7,22 +7,68 @@ import {
   UserCheck,
   BookOpen,
   Crown,
-  ShieldAlert,
   Clock,
   ArrowRight,
   CheckCircle2,
-  XCircle,
   FileText,
   AlertTriangle,
+  RefreshCw,
+  Check,
 } from "lucide-react";
-import { MOCK_USERS, MOCK_MATERIALS, MOCK_ACCESS_LOGS, MOCK_AUDIT_LOGS } from "@/lib/mock-data";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { StoredUser } from "@/lib/data-store";
 
 export default function AdminOverviewPage() {
-  const pendingUsers = MOCK_USERS.filter((u) => u.status === "pending_approval");
-  const approvedStudents = MOCK_USERS.filter((u) => u.status === "approved" && u.role === "student");
-  const suspendedUsers = MOCK_USERS.filter((u) => u.status === "suspended");
+  const [users, setUsers] = React.useState<StoredUser[]>([]);
+  const [materialsCount, setMaterialsCount] = React.useState<number>(0);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [actionFeedback, setActionFeedback] = React.useState<string | null>(null);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [usersRes, materialsRes] = await Promise.all([
+        fetch("/api/admin/users"),
+        fetch("/api/materials?status=all"),
+      ]);
+      const usersData = await usersRes.json();
+      const materialsData = await materialsRes.json();
+
+      if (usersRes.ok && usersData.users) {
+        setUsers(usersData.users);
+      }
+      if (materialsRes.ok && materialsData.materials) {
+        setMaterialsCount(materialsData.materials.length);
+      }
+    } catch {
+      // Fallback
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleApproveStudent = async (userId: string, userName: string) => {
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/approve`, { method: "POST" });
+      if (res.ok) {
+        setUsers((prev) =>
+          prev.map((u) => (u.id === userId ? { ...u, status: "approved" as const } : u))
+        );
+        setActionFeedback(`Approved "${userName}". Student can now log in.`);
+        setTimeout(() => setActionFeedback(null), 4000);
+      }
+    } catch {
+      setActionFeedback("Failed to approve student.");
+    }
+  };
+
+  const pendingUsers = users.filter((u) => u.status === "pending_approval");
+  const approvedStudents = users.filter((u) => u.status === "approved" && u.role === "student");
+  const suspendedUsers = users.filter((u) => u.status === "suspended");
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
@@ -31,40 +77,47 @@ export default function AdminOverviewPage() {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono font-semibold text-rose-400 uppercase tracking-wider">
-              System Command Center
+              Faculty Command Desk
             </span>
             <span className="text-surface-600">•</span>
-            <span className="text-[11px] font-mono text-emerald-400">Database & RLS Operational</span>
+            <span className="text-[11px] font-mono text-emerald-400">Database Active</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mt-1">
             Academic Administrative Overview
           </h1>
           <p className="text-xs sm:text-sm text-surface-400 mt-1">
-            Real-time enrollment queues, study material authorizations, and active security audit feeds
+            Live enrollment verification queue, study material repository, and student access desk
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <Link href="/admin/approvals">
-            <Button variant="primary" size="sm" className="bg-rose-600 hover:bg-rose-500 text-xs">
-              <UserCheck className="h-4 w-4 mr-1.5" />
-              Review Approvals ({pendingUsers.length})
-            </Button>
+            <button className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-600/30 flex items-center gap-2 active:scale-95 transition-all">
+              <UserCheck className="h-4 w-4" />
+              <span>Review Approvals ({pendingUsers.length})</span>
+            </button>
           </Link>
           <Link href="/admin/content">
-            <Button variant="secondary" size="sm" className="text-xs">
-              <FileText className="h-4 w-4 mr-1.5" />
-              Upload Material
-            </Button>
+            <button className="px-4 py-2 bg-surface-800 hover:bg-surface-700 text-white rounded-xl text-xs font-semibold border border-surface-700 flex items-center gap-2 active:scale-95 transition-all">
+              <FileText className="h-4 w-4" />
+              <span>Upload Material</span>
+            </button>
           </Link>
         </div>
       </div>
+
+      {actionFeedback && (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/40 p-4 text-xs text-emerald-300 flex items-center gap-2.5 animate-in fade-in">
+          <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+          <span>{actionFeedback}</span>
+        </div>
+      )}
 
       {/* 2. Key Metrics Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Link
           href="/admin/approvals"
-          className="rounded-xl border border-amber-800/40 bg-amber-950/10 p-5 hover:border-amber-700/60 transition-colors"
+          className="rounded-xl border border-amber-800/40 bg-amber-950/10 p-5 hover:border-amber-700/60 transition-colors shadow-lg"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase text-amber-400 font-semibold">Pending Approval</span>
@@ -73,12 +126,12 @@ export default function AdminOverviewPage() {
             </span>
           </div>
           <p className="text-3xl font-bold text-white mt-3">{pendingUsers.length}</p>
-          <span className="text-[11px] text-amber-300/80 mt-1 block">Awaiting ID verification</span>
+          <span className="text-[11px] text-amber-300/80 mt-1 block">Awaiting admin review</span>
         </Link>
 
         <Link
           href="/admin/users"
-          className="rounded-xl border border-surface-800 bg-surface-900/60 p-5 hover:border-surface-700 transition-colors"
+          className="rounded-xl border border-surface-800 bg-surface-900/60 p-5 hover:border-surface-700 transition-colors shadow-lg"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase text-surface-400 font-semibold">Approved Students</span>
@@ -92,7 +145,7 @@ export default function AdminOverviewPage() {
 
         <Link
           href="/admin/content"
-          className="rounded-xl border border-surface-800 bg-surface-900/60 p-5 hover:border-surface-700 transition-colors"
+          className="rounded-xl border border-surface-800 bg-surface-900/60 p-5 hover:border-surface-700 transition-colors shadow-lg"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase text-surface-400 font-semibold">Study Materials</span>
@@ -100,122 +153,86 @@ export default function AdminOverviewPage() {
               <BookOpen className="h-4 w-4" />
             </span>
           </div>
-          <p className="text-3xl font-bold text-white mt-3">{MOCK_MATERIALS.length}</p>
-          <span className="text-[11px] text-indigo-400 mt-1 block">Protected in private bucket</span>
+          <p className="text-3xl font-bold text-white mt-3">{materialsCount}</p>
+          <span className="text-[11px] text-indigo-400 mt-1 block">PDFs, Audios, Notes</span>
         </Link>
 
         <Link
-          href="/admin/logs"
-          className="rounded-xl border border-rose-900/40 bg-rose-950/10 p-5 hover:border-rose-800/60 transition-colors"
+          href="/admin/users"
+          className="rounded-xl border border-surface-800 bg-surface-900/60 p-5 hover:border-surface-700 transition-colors shadow-lg"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono uppercase text-rose-400 font-semibold">Suspended Accounts</span>
-            <span className="p-2 rounded-lg bg-rose-950 border border-rose-800/60 text-rose-400">
-              <ShieldAlert className="h-4 w-4" />
+            <span className="text-xs font-mono uppercase text-surface-400 font-semibold">Suspended</span>
+            <span className="p-2 rounded-lg bg-surface-950 border border-surface-800 text-rose-400">
+              <AlertTriangle className="h-4 w-4" />
             </span>
           </div>
           <p className="text-3xl font-bold text-white mt-3">{suspendedUsers.length}</p>
-          <span className="text-[11px] text-rose-400 mt-1 block">1 security violation logged</span>
+          <span className="text-[11px] text-rose-400 mt-1 block">Restricted accounts</span>
         </Link>
       </div>
 
-      {/* 3. Action Columns: Pending Approvals Queue & Security Stream */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Pending Approvals Widget */}
-        <div className="rounded-xl border border-surface-800 bg-surface-900 p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-surface-800">
-            <div>
-              <h2 className="text-base font-bold text-white">Pending Applicant Queue</h2>
-              <p className="text-xs text-surface-400">Requires administrative verification to grant LMS access</p>
-            </div>
-            <Link href="/admin/approvals" className="text-xs font-medium text-indigo-400 hover:text-indigo-300">
-              View All →
-            </Link>
+      {/* 3. Pending Approvals Direct Queue */}
+      <div className="rounded-2xl border border-surface-800 bg-surface-900 p-6 space-y-4 shadow-xl">
+        <div className="flex items-center justify-between pb-3 border-b border-surface-800">
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <UserCheck className="h-5 w-5 text-amber-400" />
+              <span>Newly Registered Students Awaiting Approval</span>
+            </h2>
+            <p className="text-xs text-surface-400 mt-0.5">
+              Approve students so they can log in and access your uploaded study notes and audios.
+            </p>
           </div>
-
-          {pendingUsers.length === 0 ? (
-            <div className="p-8 text-center text-xs text-surface-500 font-mono">
-              ✓ All applicants have been processed.
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {pendingUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className="rounded-lg border border-surface-800 bg-surface-950/80 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-sm text-white">{user.full_name}</span>
-                      <Badge variant="warning">Pending Approval</Badge>
-                    </div>
-                    <p className="text-xs text-surface-400 font-mono">{user.email}</p>
-                    <p className="text-[11px] text-surface-500">{user.phone_number} • {user.address}</p>
-                  </div>
-
-                  <Link href="/admin/approvals">
-                    <Button variant="primary" size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-xs w-full sm:w-auto">
-                      Inspect & Approve
-                    </Button>
-                  </Link>
-                </div>
-              ))}
-            </div>
-          )}
+          <Link
+            href="/admin/approvals"
+            className="text-xs font-bold text-rose-400 hover:text-rose-300 flex items-center gap-1"
+          >
+            <span>View All</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
         </div>
 
-        {/* Live Security & Material Access Stream */}
-        <div className="rounded-xl border border-surface-800 bg-surface-900 p-6 space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-surface-800">
-            <div>
-              <h2 className="text-base font-bold text-white">Live Access Log Activity</h2>
-              <p className="text-xs text-surface-400">Real-time preview authorizations & security events</p>
-            </div>
-            <Link href="/admin/logs" className="text-xs font-medium text-indigo-400 hover:text-indigo-300">
-              Full Logs →
-            </Link>
+        {pendingUsers.length === 0 ? (
+          <div className="py-8 text-center text-xs text-surface-400 space-y-1">
+            <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto mb-1 opacity-80" />
+            <p className="font-semibold text-white">Queue is clear</p>
+            <p>No new student registrations awaiting approval.</p>
           </div>
-
-          <div className="space-y-3">
-            {MOCK_ACCESS_LOGS.map((log) => (
+        ) : (
+          <div className="divide-y divide-surface-800/60">
+            {pendingUsers.slice(0, 5).map((u) => (
               <div
-                key={log.id}
-                className="rounded-lg border border-surface-800 bg-surface-950/80 p-3.5 flex items-start gap-3"
+                key={u.id}
+                className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
-                <div
-                  className={`mt-0.5 p-1.5 rounded ${
-                    log.action === "unauthorized_attempt"
-                      ? "bg-rose-950 text-rose-400 border border-rose-800/60"
-                      : "bg-emerald-950 text-emerald-400 border border-emerald-800/60"
-                  }`}
-                >
-                  {log.action === "unauthorized_attempt" ? (
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                  ) : (
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                  )}
-                </div>
-
-                <div className="flex-1 text-xs space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono font-semibold text-white uppercase">
-                      {log.action.replace("_", " ")}
-                    </span>
-                    <span className="text-[10px] font-mono text-surface-500">
-                      {new Date(log.created_at).toLocaleTimeString()}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white text-sm">{u.full_name}</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      Pending
                     </span>
                   </div>
-                  <p className="text-surface-300">
-                    {(log.metadata as any)?.note || "Material preview accessed"}
-                  </p>
-                  <p className="text-[10px] font-mono text-surface-500">
-                    IP: {log.ip_address} • Trace: {log.session_id || "BLOCKED"}
-                  </p>
+                  <div className="flex items-center gap-3 text-xs text-surface-400 font-mono mt-0.5">
+                    <span>{u.email}</span>
+                    {u.phone_number && <span>• {u.phone_number}</span>}
+                    {u.address && <span className="text-surface-300">• {u.address}</span>}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleApproveStudent(u.id, u.full_name)}
+                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/30 flex items-center gap-1.5 active:scale-95 transition-all"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    <span>Approve Student</span>
+                  </button>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

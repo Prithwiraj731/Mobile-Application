@@ -99,8 +99,30 @@ export default function StudentDashboardPage() {
     return matchesProgram && matchesSemester && matchesSearch;
   });
 
+  const [materials, setMaterials] = React.useState<MaterialWithDetails[]>(MOCK_MATERIALS);
+  const [isLoadingMaterials, setIsLoadingMaterials] = React.useState(false);
+
+  React.useEffect(() => {
+    const fetchLiveMaterials = async () => {
+      setIsLoadingMaterials(true);
+      try {
+        const res = await fetch("/api/materials");
+        const data = await res.json();
+        if (res.ok && data.materials && data.materials.length > 0) {
+          setMaterials(data.materials);
+        }
+      } catch {
+        // Keep initial state on network failure
+      } finally {
+        setIsLoadingMaterials(false);
+      }
+    };
+
+    fetchLiveMaterials();
+  }, []);
+
   // Filter materials based on search query & selected type
-  const filteredMaterials = MOCK_MATERIALS.filter((m) => {
+  const filteredMaterials = materials.filter((m) => {
     const matchesType = selectedType === "all" || m.type === selectedType;
     const matchesSearch =
       searchQuery === "" ||

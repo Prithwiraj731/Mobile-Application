@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { GraduationCap, ShieldCheck, ArrowRight, Lock, AlertCircle, Sparkles } from "lucide-react";
+import { GraduationCap, ShieldCheck, ArrowRight, Lock, AlertCircle, Sparkles, Clock } from "lucide-react";
 import { MOCK_USERS } from "@/lib/mock-data";
 
 export default function LoginPage() {
@@ -12,23 +12,30 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState("Student@123");
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [isPendingApproval, setIsPendingApproval] = React.useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setIsPendingApproval(false);
 
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Invalid credentials.");
+        if (data.status === "pending_approval") {
+          setIsPendingApproval(true);
+          setError(data.error || "Your account is pending admin approval.");
+        } else {
+          setError(data.error || "Invalid credentials.");
+        }
         setIsLoading(false);
         return;
       }
@@ -46,21 +53,8 @@ export default function LoginPage() {
 
       window.location.href = target;
     } catch {
-      const user = MOCK_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
-      if (user) {
-        let target = "/dashboard";
-        if (user.status === "pending_approval") {
-          target = "/pending?status=pending";
-        } else if (user.status === "suspended" || user.status === "rejected") {
-          target = `/pending?status=${user.status}`;
-        } else if (user.role === "admin") {
-          target = "/admin";
-        }
-        window.location.href = target;
-      } else {
-        setError("Network error or invalid user.");
-        setIsLoading(false);
-      }
+      setError("Network connection error. Please try again.");
+      setIsLoading(false);
     }
   };
 
@@ -68,6 +62,7 @@ export default function LoginPage() {
     setEmail(user.email);
     setPassword(user.demoPassword);
     setError(null);
+    setIsPendingApproval(false);
   };
 
   return (
@@ -90,7 +85,6 @@ export default function LoginPage() {
                 <GraduationCap className="h-10 w-10 text-orange-400" />
               </div>
             </div>
-            {/* Glowing Sun Sparkle */}
             <div className="absolute -top-2 -right-2 h-7 w-7 rounded-full bg-amber-400 text-black flex items-center justify-center shadow-lg shadow-amber-400/50 font-bold text-xs">
               ☀️
             </div>
@@ -108,23 +102,45 @@ export default function LoginPage() {
 
         {/* Login Form Card */}
         <div className="rounded-3xl bg-[#181516]/95 p-6 sm:p-8 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.85)] backdrop-blur-2xl space-y-5">
-          {error && (
+          {/* Pending Approval Notice */}
+          {isPendingApproval ? (
+            <div className="rounded-2xl border border-amber-500/40 bg-amber-950/60 p-4 text-xs text-amber-300 space-y-2 animate-in fade-in">
+              <div className="flex items-center gap-2 font-bold text-amber-200">
+                <Clock className="h-4 w-4 text-amber-400 shrink-0 animate-pulse" />
+                <span>Admission Pending Admin Approval</span>
+              </div>
+              <p className="text-[11px] text-surface-300 leading-relaxed">
+                Your account is currently waiting for admin approval. Once the faculty verifies and approves your registration, you can sign in to access all notes and materials.
+              </p>
+              <div className="pt-1">
+                <Link
+                  href="/pending?status=pending"
+                  className="text-amber-400 hover:underline font-bold text-[11px] inline-flex items-center gap-1"
+                >
+                  View Approval Status Details →
+                </Link>
+              </div>
+            </div>
+          ) : error ? (
             <div className="rounded-2xl border border-rose-500/40 bg-rose-950/60 p-3.5 text-xs text-rose-300 flex items-center gap-2.5">
               <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
               <span>{error}</span>
             </div>
-          )}
+          ) : null}
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-surface-300 mb-1.5 font-mono">
-                Student Email Address
+                Email Address
               </label>
               <input
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setIsPendingApproval(false);
+                }}
                 placeholder="student@example.com"
                 className="w-full bg-[#0c0a0b] border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-surface-500 focus:outline-none focus:border-orange-500/60 transition-colors"
               />
@@ -138,7 +154,10 @@ export default function LoginPage() {
                 type="password"
                 required
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setIsPendingApproval(false);
+                }}
                 placeholder="••••••••"
                 className="w-full bg-[#0c0a0b] border border-white/10 rounded-2xl px-4 py-3 text-sm text-white placeholder-surface-500 focus:outline-none focus:border-orange-500/60 transition-colors"
               />
@@ -148,7 +167,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="btn-mango w-full py-3.5 rounded-full text-sm font-black flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              className="btn-mango w-full py-3.5 rounded-full text-sm font-black flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
             >
               {isLoading ? (
                 <span>Verifying credentials...</span>
@@ -162,7 +181,7 @@ export default function LoginPage() {
           </form>
 
           <div className="pt-1 text-center text-xs text-surface-400">
-            New student joining Pabir Paul&apos;s Tuition?{" "}
+            New student joining tuition batches?{" "}
             <Link href="/signup" className="text-orange-400 hover:underline font-bold">
               Register here
             </Link>
@@ -174,9 +193,9 @@ export default function LoginPage() {
           <div className="flex items-center justify-between text-xs font-bold text-surface-300">
             <div className="flex items-center gap-1.5 text-amber-400">
               <Sparkles className="h-4 w-4" />
-              <span>1-Click Test Account Switcher</span>
+              <span>1-Click Test Accounts</span>
             </div>
-            <span className="text-[10px] text-surface-500 font-mono">Instant Switch</span>
+            <span className="text-[10px] text-surface-500 font-mono">Instant Credentials</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
@@ -199,7 +218,7 @@ export default function LoginPage() {
                 >
                   <span className="font-bold text-surface-100 truncate">{u.full_name}</span>
                   <span className="text-[10px] text-surface-400 capitalize font-mono mt-0.5">
-                    {isInstructor ? "⭐ Lead Faculty" : isPremium ? "👑 VIP Master" : `${u.planCode} Student`}
+                    {isInstructor ? "⭐ Faculty Admin" : isPremium ? "👑 VIP Scholar" : `${u.planCode} Student`}
                   </span>
                 </button>
               );

@@ -11,7 +11,8 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/_next") ||
     path === "/favicon.ico" ||
     path === "/manifest.json" ||
-    path.startsWith("/api/preview") ||
+    path.startsWith("/api/") ||
+    path.startsWith("/uploads/") ||
     path.includes(".")
   ) {
     return NextResponse.next({

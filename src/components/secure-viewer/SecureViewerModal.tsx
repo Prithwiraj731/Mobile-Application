@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { X, Shield, Maximize2, Minimize2, AlertTriangle, Lock, ArrowLeft } from "lucide-react";
+import { X, Shield, Maximize2, Minimize2, AlertTriangle, Lock, ArrowLeft, Download } from "lucide-react";
 import { MaterialWithDetails } from "@/types";
 import { DynamicWatermark } from "./DynamicWatermark";
 import { PdfViewer } from "./PdfViewer";
@@ -118,6 +118,16 @@ export function SecureViewerModal({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <a
+              href={`/api/materials/${material.id}/download`}
+              download
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-orange-600/20 hover:bg-orange-600 text-orange-300 hover:text-white border border-orange-500/40 transition-all flex items-center gap-1.5 text-xs font-bold active:scale-95 shadow-sm"
+              title="Download Material"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Download</span>
+            </a>
+
             <button
               onClick={toggleFullscreen}
               className="p-2 rounded-lg text-surface-400 hover:bg-surface-800 hover:text-white transition-colors active:scale-95"

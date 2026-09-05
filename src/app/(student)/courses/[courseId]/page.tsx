@@ -19,14 +19,36 @@ export default function CourseDetailPage() {
   const [watermarkText, setWatermarkText] = React.useState("");
   const [sessionTraceId, setSessionTraceId] = React.useState("");
 
-  const courseMaterials = MOCK_MATERIALS;
+  const [courseMaterials, setCourseMaterials] = React.useState<MaterialWithDetails[]>(MOCK_MATERIALS);
 
-  const handleOpenPreview = (material: MaterialWithDetails) => {
+  React.useEffect(() => {
+    fetch("/api/materials")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.materials && data.materials.length > 0) {
+          setCourseMaterials(data.materials);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleOpenPreview = async (material: MaterialWithDetails) => {
     setSelectedMaterial(material);
-    const trace = `SEC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    const student = MOCK_USERS[1];
-    setWatermarkText(`${student.full_name} • ${student.email} • ${new Date().toLocaleDateString()} • Session #${trace}`);
-    setSessionTraceId(trace);
+    try {
+      const res = await fetch(`/api/preview/${material.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        setWatermarkText(data.watermarkText || `Student • Session #SEC`);
+        setSessionTraceId(data.sessionTraceId || "SEC-DEV");
+      } else {
+        const trace = `SEC-${Date.now().toString(36).toUpperCase()}`;
+        setSessionTraceId(trace);
+        setWatermarkText(`Student Session #${trace}`);
+      }
+    } catch {
+      const trace = `SEC-${Date.now().toString(36).toUpperCase()}`;
+      setSessionTraceId(trace);
+    }
     setIsViewerOpen(true);
   };
 

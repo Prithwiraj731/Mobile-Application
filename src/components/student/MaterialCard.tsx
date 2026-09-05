@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FileText, Image as ImageIcon, Headphones, BookOpen, Lock, Play, Eye } from "lucide-react";
+import { FileText, Image as ImageIcon, Headphones, BookOpen, Lock, Play, Eye, Download } from "lucide-react";
 import { MaterialWithDetails } from "@/types";
 import { Badge } from "@/components/ui/Badge";
 import { formatBytes, formatDuration } from "@/lib/utils/cn";
@@ -44,7 +44,7 @@ export function MaterialCard({
     },
     text_note: {
       icon: BookOpen,
-      label: "Revision",
+      label: "Revision Note",
       color: "text-amber-300",
       bg: "bg-amber-500/15 border-amber-500/30 text-amber-300",
     },
@@ -109,7 +109,7 @@ export function MaterialCard({
         </div>
       </div>
 
-      {/* Footer Info */}
+      {/* Footer Info & Actions */}
       <div className="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-between text-[11px] text-surface-400 font-mono">
         <div className="flex items-center gap-1.5">
           {material.file?.page_count && <span>{material.file.page_count}p</span>}
@@ -122,13 +122,27 @@ export function MaterialCard({
             Unlock →
           </span>
         ) : (
-          <div className="flex items-center gap-1.5 bg-white text-black font-extrabold text-xs px-3.5 py-1.5 rounded-full shadow-md group-hover:bg-amber-300 transition-colors">
-            {material.type === "audio" ? (
-              <Play className="h-3 w-3 fill-current text-black" />
-            ) : (
-              <Eye className="h-3 w-3 text-black" />
-            )}
-            <span>Open</span>
+          <div className="flex items-center gap-2">
+            {/* Direct Download Button */}
+            <a
+              href={`/api/materials/${material.id}/download`}
+              download
+              onClick={(e) => e.stopPropagation()}
+              className="p-2 rounded-full bg-surface-800 hover:bg-orange-600 text-surface-300 hover:text-white transition-colors active:scale-95 shadow-sm"
+              title="Download Material"
+            >
+              <Download className="h-3.5 w-3.5" />
+            </a>
+
+            {/* Preview Button */}
+            <div className="flex items-center gap-1.5 bg-white text-black font-extrabold text-xs px-3.5 py-1.5 rounded-full shadow-md group-hover:bg-amber-300 transition-colors">
+              {material.type === "audio" ? (
+                <Play className="h-3 w-3 fill-current text-black" />
+              ) : (
+                <Eye className="h-3 w-3 text-black" />
+              )}
+              <span>Preview</span>
+            </div>
           </div>
         )}
       </div>
