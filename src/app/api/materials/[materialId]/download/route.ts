@@ -13,10 +13,10 @@ export async function GET(
     const material = DataStore.getMaterialById(materialId);
 
     if (!material) {
-      return NextResponse.json({ error: "Material not found." }, { status: 404 });
+      return NextResponse.json({ error: "Study material not found." }, { status: 404 });
     }
 
-    // 1. Verify user session
+    // 1. Verify user session if available
     const cookieStore = cookies();
     const demoCookie = cookieStore.get("demo_user_session")?.value;
     let sessionUser: any = null;
@@ -26,20 +26,38 @@ export async function GET(
       } catch {}
     }
 
-    // Check if user is approved (or allow if admin)
+    // Re-verify against DataStore to check freshest status
+    if (sessionUser?.id) {
+      const fresh = DataStore.getUserById(sessionUser.id);
+      if (fresh) {
+        sessionUser = fresh;
+      }
+    }
+
+    // Check approval if an authenticated session exists
     if (sessionUser && sessionUser.status !== "approved" && sessionUser.role !== "admin") {
       return NextResponse.json(
-        { error: "Your account must be approved by admin to download study materials." },
+        { error: "Your account is pending admin approval. You will be able to download study materials once verified." },
         { status: 403 }
       );
     }
+
+    // Common CORS and caching headers for reliable downloads
+    const baseHeaders: Record<string, string> = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+      "Access-Control-Expose-Headers": "Content-Disposition, Content-Length",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      "Pragma": "no-cache",
+      "Expires": "0",
+    };
 
     // 2. Handle Text Note download as formatted document
     if (material.type === "text_note") {
       const sanitizedName = material.title.replace(/[^a-zA-Z0-9_-]/g, "_");
       const content = `=====================================================
 ${material.title.toUpperCase()}
-Pabir Paul's Tuition • Commerce Division
+Debraj Commerce Tutorials • Study Resource
 Access Tier: ${material.access_level.toUpperCase()}
 Generated on: ${new Date().toLocaleString()}
 =====================================================
@@ -53,11 +71,12 @@ STUDY NOTES CONTENT:
 ${material.content_text || "Study notes content."}
 
 =====================================================
-CONFIDENTIAL STUDY MATERIAL • PABIR PAUL'S TUITION
+CONFIDENTIAL STUDY MATERIAL • DEBRAJ COMMERCE TUTORIALS
 =====================================================`;
 
       return new Response(content, {
         headers: {
+          ...baseHeaders,
           "Content-Disposition": `attachment; filename="${sanitizedName}_Study_Notes.txt"`,
           "Content-Type": "text/plain; charset=utf-8",
         },
@@ -74,10 +93,13 @@ CONFIDENTIAL STUDY MATERIAL • PABIR PAUL'S TUITION
       if (fs.existsSync(physicalPath)) {
         const fileBuffer = await fs.promises.readFile(physicalPath);
         const filename = material.file.original_filename || path.basename(physicalPath);
+        const cleanName = filename.replace(/["\r\n]/g, "");
+        const asciiName = cleanName.replace(/[^\x20-\x7E]/g, "_");
 
         return new Response(fileBuffer, {
           headers: {
-            "Content-Disposition": `attachment; filename="${encodeURIComponent(filename)}"`,
+            ...baseHeaders,
+            "Content-Disposition": `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(cleanName)}`,
             "Content-Type": material.file.mime_type || "application/octet-stream",
             "Content-Length": fileBuffer.length.toString(),
           },
@@ -85,10 +107,10 @@ CONFIDENTIAL STUDY MATERIAL • PABIR PAUL'S TUITION
       }
     }
 
-    // 4. Fallback for seeded/mock materials: generate an informative study guide document
+    // 4. Fallback for materials without physical file
     const safeTitle = material.title.replace(/[^a-zA-Z0-9_-]/g, "_");
     const fallbackContent = `=====================================================
-PABIR PAUL'S TUITION • STUDY MATERIAL DOWNLOAD
+DEBRAJ COMMERCE TUTORIALS • STUDY MATERIAL DOWNLOAD
 =====================================================
 Material: ${material.title}
 Type: ${material.type.toUpperCase()}
@@ -98,21 +120,21 @@ Downloaded On: ${new Date().toLocaleString()}
 =====================================================
 
 SYNOPSIS:
-${material.description || "Comprehensive academic revision notes and study guidance prepared by Pabir Paul."}
+${material.description || "Comprehensive academic revision notes and study guidance."}
 
 KEY LEARNING HIGHLIGHTS:
 1. Core theoretical foundations, formula derivations, and standard problem schemas.
 2. Verified ledger formats, ICAI/CMA standard presentation guidelines.
 3. Exam-oriented question-answer breakdown with step marking pointers.
 
-Faculty Desk: Pabir Paul (Commerce Specialist)
+Faculty Desk: Debraj Commerce Tutorials
 Official Tuition Portal • All Rights Reserved.`;
 
-    const downloadExt = material.type === "pdf" ? ".pdf" : material.type === "audio" ? ".mp3" : ".txt";
-    const filename = `${safeTitle}_Reference_Pack${downloadExt === ".txt" ? ".txt" : ".txt"}`;
+    const filename = `${safeTitle}_Reference_Pack.txt`;
 
     return new Response(fallbackContent, {
       headers: {
+        ...baseHeaders,
         "Content-Disposition": `attachment; filename="${filename}"`,
         "Content-Type": "text/plain; charset=utf-8",
       },

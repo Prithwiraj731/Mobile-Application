@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { FileText, Image as ImageIcon, Headphones, BookOpen, Lock, Play, Eye, Download } from "lucide-react";
+import { FileText, Image as ImageIcon, Headphones, BookOpen, Lock, Play, Eye, Download, RefreshCw } from "lucide-react";
 import { MaterialWithDetails } from "@/types";
 import { Badge } from "@/components/ui/Badge";
 import { formatBytes, formatDuration } from "@/lib/utils/cn";
+import { downloadMaterialFile } from "@/lib/utils/download-helper";
 
 export interface MaterialCardProps {
   material: MaterialWithDetails;
@@ -52,12 +53,30 @@ export function MaterialCard({
 
   const currentType = typeConfig[material.type] || typeConfig.pdf;
   const IconComponent = currentType.icon;
+  const [isDownloading, setIsDownloading] = React.useState(false);
 
   const handleClick = () => {
     if (isLocked) {
       onUpgradePrompt(material.access_level);
     } else {
       onOpenPreview(material);
+    }
+  };
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isLocked) {
+      onUpgradePrompt(material.access_level);
+      return;
+    }
+    setIsDownloading(true);
+    try {
+      await downloadMaterialFile(
+        material.id,
+        material.file?.original_filename || `${material.title}.${material.type === "pdf" ? "pdf" : material.type === "audio" ? "mp3" : "txt"}`
+      );
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -124,15 +143,19 @@ export function MaterialCard({
         ) : (
           <div className="flex items-center gap-2">
             {/* Direct Download Button */}
-            <a
-              href={`/api/materials/${material.id}/download`}
-              download
-              onClick={(e) => e.stopPropagation()}
-              className="p-2 rounded-full bg-surface-800 hover:bg-orange-600 text-surface-300 hover:text-white transition-colors active:scale-95 shadow-sm"
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="p-2 rounded-full bg-surface-800 hover:bg-orange-600 text-surface-300 hover:text-white transition-colors active:scale-95 shadow-sm disabled:opacity-50"
               title="Download Material"
             >
-              <Download className="h-3.5 w-3.5" />
-            </a>
+              {isDownloading ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin text-orange-400" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+            </button>
 
             {/* Preview Button */}
             <div className="flex items-center gap-1.5 bg-white text-black font-extrabold text-xs px-3.5 py-1.5 rounded-full shadow-md group-hover:bg-amber-300 transition-colors">

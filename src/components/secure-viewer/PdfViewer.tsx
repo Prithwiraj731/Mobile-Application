@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText, Download, RefreshCw } from "lucide-react";
 import { MaterialWithDetails } from "@/types";
+import { downloadMaterialFile } from "@/lib/utils/download-helper";
 
 export interface PdfViewerProps {
   material: MaterialWithDetails;
@@ -13,6 +14,7 @@ export interface PdfViewerProps {
 export function PdfViewer({ material, signedUrl }: PdfViewerProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [zoomLevel, setZoomLevel] = React.useState(100);
+  const [isDownloading, setIsDownloading] = React.useState(false);
   const totalPages = material.file?.page_count || 6;
 
   const isRealPdf = Boolean(signedUrl && (signedUrl.endsWith(".pdf") || signedUrl.includes("/uploads/")));
@@ -21,6 +23,18 @@ export function PdfViewer({ material, signedUrl }: PdfViewerProps) {
   const handleNextPage = () => setCurrentPage((p) => Math.min(totalPages, p + 1));
   const handleZoomIn = () => setZoomLevel((z) => Math.min(175, z + 25));
   const handleZoomOut = () => setZoomLevel((z) => Math.max(75, z - 25));
+
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      await downloadMaterialFile(
+        material.id,
+        material.file?.original_filename || `${material.title}.pdf`
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full bg-surface-950 rounded-lg overflow-hidden border border-surface-800 secure-protected-area">
@@ -83,15 +97,20 @@ export function PdfViewer({ material, signedUrl }: PdfViewerProps) {
             </div>
           )}
 
-          <a
-            href={`/api/materials/${material.id}/download`}
-            download
-            className="flex items-center gap-1 px-2.5 py-1 rounded bg-orange-600 hover:bg-orange-500 text-white font-bold text-[11px] shadow-sm active:scale-95 transition-all"
+          <button
+            type="button"
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="flex items-center gap-1 px-2.5 py-1 rounded bg-orange-600 hover:bg-orange-500 text-white font-bold text-[11px] shadow-sm active:scale-95 transition-all disabled:opacity-50"
             title="Download PDF"
           >
-            <Download className="h-3 w-3" />
-            <span>Download</span>
-          </a>
+            {isDownloading ? (
+              <RefreshCw className="h-3 w-3 animate-spin text-white" />
+            ) : (
+              <Download className="h-3 w-3" />
+            )}
+            <span>{isDownloading ? "Downloading..." : "Download"}</span>
+          </button>
 
           <span className="hidden sm:inline-block text-[11px] text-emerald-400 bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-800/40 font-mono">
             ● AUTHORIZED

@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Play, Pause, Volume2, VolumeX, Headphones, ShieldCheck, Download } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, Headphones, ShieldCheck, Download, RefreshCw } from "lucide-react";
 import { MaterialWithDetails } from "@/types";
 import { formatDuration } from "@/lib/utils/cn";
+import { downloadMaterialFile } from "@/lib/utils/download-helper";
 
 export interface AudioPlayerProps {
   material: MaterialWithDetails;
@@ -18,6 +19,19 @@ export function AudioPlayer({ material, signedUrl }: AudioPlayerProps) {
   const [duration, setDuration] = React.useState(material.file?.duration_seconds || 600);
   const [playbackSpeed, setPlaybackSpeed] = React.useState(1.0);
   const [isMuted, setIsMuted] = React.useState(false);
+  const [isDownloading, setIsDownloading] = React.useState(false);
+
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    try {
+      await downloadMaterialFile(
+        material.id,
+        material.file?.original_filename || `${material.title}.mp3`
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   // If real audio file exists, control it via HTML5 Audio
   const isRealAudio = Boolean(signedUrl && (signedUrl.endsWith(".mp3") || signedUrl.endsWith(".wav") || signedUrl.endsWith(".m4a") || signedUrl.includes("/uploads/")));
@@ -178,14 +192,19 @@ export function AudioPlayer({ material, signedUrl }: AudioPlayerProps) {
             </button>
 
             {/* Direct Download */}
-            <a
-              href={`/api/materials/${material.id}/download`}
-              download
-              className="p-2 text-surface-400 hover:text-orange-400 rounded-lg active:scale-95 transition-all"
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="p-2 text-surface-400 hover:text-orange-400 rounded-lg active:scale-95 transition-all disabled:opacity-50"
               title="Download Audio Class"
             >
-              <Download className="h-4 w-4" />
-            </a>
+              {isDownloading ? (
+                <RefreshCw className="h-4 w-4 animate-spin text-orange-400" />
+              ) : (
+                <Download className="h-4 w-4" />
+              )}
+            </button>
           </div>
 
           {/* Main Play / Pause Button */}

@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { X, Shield, Maximize2, Minimize2, AlertTriangle, Lock, ArrowLeft, Download } from "lucide-react";
+import { X, Shield, Maximize2, Minimize2, AlertTriangle, Lock, ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { MaterialWithDetails } from "@/types";
+import { downloadMaterialFile } from "@/lib/utils/download-helper";
 import { DynamicWatermark } from "./DynamicWatermark";
 import { PdfViewer } from "./PdfViewer";
 import { ImageViewer } from "./ImageViewer";
@@ -28,6 +29,20 @@ export function SecureViewerModal({
 }: SecureViewerModalProps) {
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const [securityNotice, setSecurityNotice] = React.useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = React.useState(false);
+
+  const handleDownload = async () => {
+    if (!material) return;
+    setIsDownloading(true);
+    try {
+      await downloadMaterialFile(
+        material.id,
+        material.file?.original_filename || `${material.title}.${material.type === "pdf" ? "pdf" : material.type === "audio" ? "mp3" : "txt"}`
+      );
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   // Keyboard shortcut interception & anti-tamper deterrents
   React.useEffect(() => {
@@ -118,15 +133,22 @@ export function SecureViewerModal({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <a
-              href={`/api/materials/${material.id}/download`}
-              download
-              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-orange-600/20 hover:bg-orange-600 text-orange-300 hover:text-white border border-orange-500/40 transition-all flex items-center gap-1.5 text-xs font-bold active:scale-95 shadow-sm"
+            <button
+              type="button"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-orange-600/20 hover:bg-orange-600 text-orange-300 hover:text-white border border-orange-500/40 transition-all flex items-center gap-1.5 text-xs font-bold active:scale-95 shadow-sm disabled:opacity-50"
               title="Download Material"
             >
-              <Download className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Download</span>
-            </a>
+              {isDownloading ? (
+                <RefreshCw className="h-3.5 w-3.5 animate-spin text-orange-400" />
+              ) : (
+                <Download className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {isDownloading ? "Downloading..." : "Download"}
+              </span>
+            </button>
 
             <button
               onClick={toggleFullscreen}
