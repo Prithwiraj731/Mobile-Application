@@ -1,15 +1,31 @@
 import fs from "fs";
 import path from "path";
-import { MOCK_USERS, MOCK_COURSES } from "./mock-data";
-import { MaterialWithDetails, Profile, AccessLevel, MaterialType } from "@/types";
+import { MOCK_USERS } from "./mock-data";
+import { MaterialWithDetails, Profile, AccessLevel, MaterialType, Course } from "@/types";
 
 export interface StoredUser extends Profile {
   demoPassword?: string;
   planCode?: "FREE" | "PRO" | "PREMIUM";
 }
 
+export interface StoredCourse {
+  id: string;
+  title: string;
+  slug: string;
+  code: string;
+  program: "BCOM" | "MCOM" | "CA" | "CMA";
+  semester: string;
+  description: string;
+  thumbnail_url?: string | null;
+  is_published: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
 interface AppDataSchema {
   users: StoredUser[];
+  courses: StoredCourse[];
   materials: MaterialWithDetails[];
   lastUpdated: string;
 }
@@ -32,6 +48,7 @@ function ensureDirectories() {
 function getInitialData(): AppDataSchema {
   return {
     users: [...MOCK_USERS],
+    courses: [],
     materials: [],
     lastUpdated: new Date().toISOString(),
   };
@@ -48,7 +65,11 @@ function readData(): AppDataSchema {
 
   try {
     const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!parsed.courses) parsed.courses = [];
+    if (!parsed.materials) parsed.materials = [];
+    if (!parsed.users) parsed.users = [];
+    return parsed;
   } catch (err) {
     console.error("Error reading data store file, resetting to defaults:", err);
     const initial = getInitialData();
@@ -238,6 +259,92 @@ export const DataStore = {
   },
 
   /**
+   * Fetch all courses with optional filtering
+   */
+  getCourses(filter?: { program?: string; semester?: string; search?: string }): StoredCourse[] {
+    const data = readData();
+    let result = [...data.courses];
+
+    if (filter?.program && filter.program !== "all") {
+      result = result.filter((c) => c.program === filter.program);
+    }
+    if (filter?.semester && filter.semester !== "all") {
+      result = result.filter((c) => c.semester.toLowerCase().includes(filter.semester!.toLowerCase()));
+    }
+    if (filter?.search) {
+      const q = filter.search.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.title.toLowerCase().includes(q) ||
+          c.description?.toLowerCase().includes(q) ||
+          c.code.toLowerCase().includes(q)
+      );
+    }
+
+    return result.sort((a, b) => a.order_index - b.order_index);
+  },
+
+  /**
+   * Find single course by ID
+   */
+  getCourseById(id: string): StoredCourse | null {
+    const data = readData();
+    return data.courses.find((c) => c.id === id) || null;
+  },
+
+  /**
+   * Create a new course/batch
+   */
+  createCourse(params: {
+    title: string;
+    program: "BCOM" | "MCOM" | "CA" | "CMA";
+    semester: string;
+    code?: string;
+    description?: string;
+    thumbnailUrl?: string;
+  }): StoredCourse {
+    const data = readData();
+    const courseId = `c-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+    const slug = params.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+
+    const newCourse: StoredCourse = {
+      id: courseId,
+      title: params.title.trim(),
+      slug,
+      code: params.code?.trim() || `${params.program}-${params.semester.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()}`,
+      program: params.program,
+      semester: params.semester,
+      description: params.description?.trim() || `Course curriculum and lecture notes for ${params.title.trim()}.`,
+      thumbnail_url: params.thumbnailUrl || "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80",
+      is_published: true,
+      order_index: data.courses.length + 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    data.courses.push(newCourse);
+    writeData(data);
+    return newCourse;
+  },
+
+  /**
+   * Delete a course
+   */
+  deleteCourse(id: string): boolean {
+    const data = readData();
+    const initLen = data.courses.length;
+    data.courses = data.courses.filter((c) => c.id !== id);
+    if (data.courses.length !== initLen) {
+      writeData(data);
+      return true;
+    }
+    return false;
+  },
+
+  /**
    * Create a new material uploaded/created by admin
    */
   createMaterial(params: {
@@ -246,6 +353,7 @@ export const DataStore = {
     type: MaterialType;
     accessLevel?: AccessLevel;
     courseId?: string;
+    courseTitle?: string;
     semester?: string;
     program?: string;
     contentText?: string;
@@ -261,7 +369,50 @@ export const DataStore = {
   }): MaterialWithDetails {
     const data = readData();
     const materialId = `m-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
-    const matchedCourse = MOCK_COURSES.find((c) => c.id === params.courseId) || MOCK_COURSES[0];
+
+    // 1. Resolve or dynamically auto-create course
+    let targetCourse: StoredCourse | null = null;
+    if (params.courseId) {
+      targetCourse = data.courses.find((c) => c.id === params.courseId) || null;
+    }
+
+    if (!targetCourse && params.courseTitle && params.courseTitle.trim()) {
+      const existing = data.courses.find(
+        (c) =>
+          c.title.toLowerCase() === params.courseTitle!.trim().toLowerCase() &&
+          (!params.program || c.program === params.program)
+      );
+      if (existing) {
+        targetCourse = existing;
+      } else {
+        const program = (params.program as any) || "BCOM";
+        const semester = params.semester || "Semester 1";
+        const courseId = `c-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`;
+        targetCourse = {
+          id: courseId,
+          title: params.courseTitle.trim(),
+          slug: params.courseTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          code: `${program}-${semester.replace(/[^a-zA-Z0-9]/g, "").toUpperCase()}`,
+          program,
+          semester,
+          description: `Study materials and lecture curriculum for ${params.courseTitle.trim()}.`,
+          thumbnail_url: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80",
+          is_published: true,
+          order_index: data.courses.length + 1,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        data.courses.push(targetCourse);
+      }
+    }
+
+    if (!targetCourse && data.courses.length > 0) {
+      targetCourse = data.courses[0];
+    }
+
+    const courseTitle = targetCourse?.title || params.courseTitle || `${params.program || "B.COM"} ${params.semester || "Semester 1"} Coursework`;
+    const courseId = targetCourse?.id || `c-default-${Date.now()}`;
+    const courseSlug = targetCourse?.slug || "commerce-coursework";
 
     const newMaterial: MaterialWithDetails = {
       id: materialId,
@@ -273,7 +424,7 @@ export const DataStore = {
       status: "published",
       order_index: data.materials.length + 1,
       content_text: params.type === "text_note" ? params.contentText || null : null,
-      created_by_admin_id: params.createdById || "u-admin-001",
+      created_by_admin_id: params.createdById || "u-admin-master",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       topic: {
@@ -288,22 +439,33 @@ export const DataStore = {
         chapter: {
           id: `ch-${Date.now()}`,
           subject_id: `s-${Date.now()}`,
-          title: matchedCourse.title,
-          slug: matchedCourse.slug || "course-module",
+          title: courseTitle,
+          slug: courseSlug,
           description: "",
           order_index: 1,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           subject: {
             id: `s-${Date.now()}`,
-            course_id: matchedCourse.id,
-            title: matchedCourse.title,
-            slug: matchedCourse.slug || "subject",
+            course_id: courseId,
+            title: courseTitle,
+            slug: courseSlug,
             description: "",
             order_index: 1,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            course: matchedCourse,
+            course: {
+              id: targetCourse ? targetCourse.id : courseId,
+              title: targetCourse ? targetCourse.title : courseTitle,
+              slug: targetCourse ? targetCourse.slug : courseSlug,
+              code: targetCourse ? targetCourse.code : "COURSE-01",
+              description: targetCourse ? targetCourse.description : "",
+              thumbnail_url: targetCourse?.thumbnail_url ?? null,
+              is_published: targetCourse ? targetCourse.is_published : true,
+              order_index: targetCourse ? targetCourse.order_index : 1,
+              created_at: targetCourse ? targetCourse.created_at : new Date().toISOString(),
+              updated_at: targetCourse ? targetCourse.updated_at : new Date().toISOString(),
+            },
           },
         },
       },

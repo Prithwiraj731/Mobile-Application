@@ -26,7 +26,7 @@ import { PlanBadge } from "@/components/student/PlanBadge";
 import { SecureViewerModal } from "@/components/secure-viewer/SecureViewerModal";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import { MOCK_COURSES, MOCK_MATERIALS, COMMERCE_PROGRAMS } from "@/lib/mock-data";
+import { COMMERCE_PROGRAMS } from "@/lib/mock-data";
 import { MaterialWithDetails } from "@/types";
 
 export default function StudentDashboardPage() {
@@ -42,6 +42,10 @@ export default function StudentDashboardPage() {
   const [isViewerOpen, setIsViewerOpen] = React.useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = React.useState(false);
   const [targetUpgradeTier, setTargetUpgradeTier] = React.useState<string>("pro");
+
+  const [courses, setCourses] = React.useState<any[]>([]);
+  const [materials, setMaterials] = React.useState<MaterialWithDetails[]>([]);
+  const [isLoadingMaterials, setIsLoadingMaterials] = React.useState(false);
 
   const handleSimulateTierChange = (rank: number) => {
     setUserPlanRank(rank);
@@ -85,7 +89,7 @@ export default function StudentDashboardPage() {
   // Filter courses based on program, semester & search
   const currentProgramObj = COMMERCE_PROGRAMS.find((p) => p.id === selectedProgram) || COMMERCE_PROGRAMS[0];
 
-  const filteredCourses = MOCK_COURSES.filter((c) => {
+  const filteredCourses = courses.filter((c) => {
     const matchesProgram = c.program === selectedProgram;
     const matchesSemester =
       selectedSemester === "all" ||
@@ -97,17 +101,21 @@ export default function StudentDashboardPage() {
     return matchesProgram && matchesSemester && matchesSearch;
   });
 
-  const [materials, setMaterials] = React.useState<MaterialWithDetails[]>(MOCK_MATERIALS);
-  const [isLoadingMaterials, setIsLoadingMaterials] = React.useState(false);
-
   React.useEffect(() => {
-    const fetchLiveMaterials = async () => {
+    const fetchData = async () => {
       setIsLoadingMaterials(true);
       try {
-        const res = await fetch("/api/materials");
-        const data = await res.json();
-        if (res.ok && Array.isArray(data.materials)) {
-          setMaterials(data.materials);
+        const [matRes, courseRes] = await Promise.all([
+          fetch("/api/materials"),
+          fetch("/api/courses"),
+        ]);
+        const matData = await matRes.json();
+        const courseData = await courseRes.json();
+        if (matRes.ok && Array.isArray(matData.materials)) {
+          setMaterials(matData.materials);
+        }
+        if (courseRes.ok && Array.isArray(courseData.courses)) {
+          setCourses(courseData.courses);
         }
       } catch {
         // Keep initial state on network failure
@@ -116,7 +124,7 @@ export default function StudentDashboardPage() {
       }
     };
 
-    fetchLiveMaterials();
+    fetchData();
   }, []);
 
   // Filter materials based on search query & selected type
@@ -317,61 +325,69 @@ export default function StudentDashboardPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredCourses.map((course, idx) => {
-            const isCyan = idx % 4 === 0;
-            const isViolet = idx % 4 === 1;
-            const isEmerald = idx % 4 === 2;
-            const cardClass = isCyan
-              ? "card-cyan-vivid"
-              : isViolet
-              ? "card-violet-vivid"
-              : isEmerald
-              ? "card-emerald-vivid"
-              : "card-amber-vivid";
+        {filteredCourses.length === 0 ? (
+          <div className="rounded-3xl bg-[#181516]/60 border border-white/5 p-8 text-center space-y-2">
+            <GraduationCap className="h-8 w-8 text-surface-500 mx-auto" />
+            <p className="text-sm font-bold text-white">No courses listed for {selectedProgram} yet</p>
+            <p className="text-xs text-surface-400">Your faculty will publish study modules and batches soon.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredCourses.map((course, idx) => {
+              const isCyan = idx % 4 === 0;
+              const isViolet = idx % 4 === 1;
+              const isEmerald = idx % 4 === 2;
+              const cardClass = isCyan
+                ? "card-cyan-vivid"
+                : isViolet
+                ? "card-violet-vivid"
+                : isEmerald
+                ? "card-emerald-vivid"
+                : "card-amber-vivid";
 
-            const iconEmoji = isCyan ? "🔮" : isViolet ? "📊" : isEmerald ? "⚖️" : "📈";
+              const iconEmoji = isCyan ? "🔮" : isViolet ? "📊" : isEmerald ? "⚖️" : "📈";
 
-            return (
-              <div
-                key={course.id}
-                className={`group relative rounded-3xl p-6 text-white transition-all duration-300 shadow-xl flex flex-col justify-between hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${cardClass}`}
-              >
-                <div className="space-y-3">
-                  {/* Top 3D Icon Box with glass effect */}
-                  <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <span>{iconEmoji}</span>
-                  </div>
+              return (
+                <div
+                  key={course.id}
+                  className={`group relative rounded-3xl p-6 text-white transition-all duration-300 shadow-xl flex flex-col justify-between hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${cardClass}`}
+                >
+                  <div className="space-y-3">
+                    {/* Top 3D Icon Box with glass effect */}
+                    <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 flex items-center justify-center text-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <span>{iconEmoji}</span>
+                    </div>
 
-                  <div className="space-y-1">
-                    <h4 className="font-black text-base sm:text-lg text-white leading-snug drop-shadow-sm line-clamp-2">
-                      {course.title}
-                    </h4>
-                    <div className="flex items-center gap-2 text-white/90 text-xs font-medium pt-0.5">
-                      <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                      <span>10 Lessons • {course.semester}</span>
+                    <div className="space-y-1">
+                      <h4 className="font-black text-base sm:text-lg text-white leading-snug drop-shadow-sm line-clamp-2">
+                        {course.title}
+                      </h4>
+                      <div className="flex items-center gap-2 text-white/90 text-xs font-medium pt-0.5">
+                        <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                        <span>{course.semester}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Card Footer: Tag on Left, Play Button on Right */}
-                <div className="pt-5 mt-4 border-t border-white/20 flex items-center justify-between">
-                  <span className="text-[11px] font-mono font-bold bg-black/25 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 text-white">
-                    {course.code}
-                  </span>
+                  {/* Card Footer: Tag on Left, Play Button on Right */}
+                  <div className="pt-5 mt-4 border-t border-white/20 flex items-center justify-between">
+                    <span className="text-[11px] font-mono font-bold bg-black/25 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 text-white">
+                      {course.code}
+                    </span>
 
-                  <Link
-                    href={`/courses/${course.id}`}
-                    className="flex items-center gap-1.5 bg-white text-black font-black text-xs px-4 py-2 rounded-full shadow-xl hover:bg-amber-300 transition-colors active:scale-95"
-                  >
-                    <Play className="h-3 w-3 fill-current text-black" />
-                    <span>Play</span>
-                  </Link>
+                    <Link
+                      href={`/courses/${course.id}`}
+                      className="flex items-center gap-1.5 bg-white text-black font-black text-xs px-4 py-2 rounded-full shadow-xl hover:bg-amber-300 transition-colors active:scale-95"
+                    >
+                      <Play className="h-3 w-3 fill-current text-black" />
+                      <span>Play</span>
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 6. Study Materials & Scanner Solutions */}

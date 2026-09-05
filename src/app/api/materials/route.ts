@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     let type: MaterialType = "pdf";
     let accessLevel: AccessLevel = "free";
     let courseId = "";
+    let courseTitle = "";
     let semester = "";
     let program = "";
     let contentText = "";
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
       type = ((formData.get("type") as string) || "pdf") as MaterialType;
       accessLevel = ((formData.get("accessLevel") as string) || "free") as AccessLevel;
       courseId = (formData.get("courseId") as string) || "";
+      courseTitle = (formData.get("courseTitle") as string) || "";
       semester = (formData.get("semester") as string) || "";
       program = (formData.get("program") as string) || "";
       contentText = (formData.get("contentText") as string) || "";
@@ -79,6 +81,7 @@ export async function POST(request: Request) {
       type = (body.type || "pdf") as MaterialType;
       accessLevel = (body.accessLevel || "free") as AccessLevel;
       courseId = body.courseId || "";
+      courseTitle = body.courseTitle || "";
       semester = body.semester || "";
       program = body.program || "";
       contentText = body.contentText || "";
@@ -99,6 +102,7 @@ export async function POST(request: Request) {
       type,
       accessLevel,
       courseId,
+      courseTitle,
       semester,
       program,
       contentText,
