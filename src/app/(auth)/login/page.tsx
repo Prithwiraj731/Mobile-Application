@@ -60,7 +60,10 @@ export default function LoginPage() {
 
 
   return (
-    <div className="min-h-screen bg-[#0c0a0b] flex flex-col justify-center items-center p-4 sm:p-6 text-surface-100 pb-16 relative overflow-hidden">
+    <div
+      className="min-h-screen bg-[#0c0a0b] flex flex-col justify-center items-center p-4 sm:p-6 text-surface-100 pb-16 relative overflow-hidden"
+      style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 24px)" }}
+    >
       {/* Ambient Glowing Orbs */}
       <div className="absolute top-12 left-12 h-3.5 w-3.5 rounded-full bg-amber-400 shadow-[0_0_16px_rgba(251,191,36,0.9)] animate-pulse" />
       <div className="absolute top-28 right-16 h-4 w-4 rounded-full bg-purple-500 shadow-[0_0_18px_rgba(168,85,247,0.9)] animate-pulse" />

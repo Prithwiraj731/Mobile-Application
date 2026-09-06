@@ -92,7 +92,10 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0c0a0b] flex flex-col justify-center items-center p-4 sm:p-6 text-surface-100 pb-16 relative overflow-hidden">
+    <div
+      className="min-h-screen bg-[#0c0a0b] flex flex-col justify-center items-center p-4 sm:p-6 text-surface-100 pb-16 relative overflow-hidden"
+      style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 24px)" }}
+    >
       {/* Ambient Orbs */}
       <div className="absolute top-10 -left-10 w-72 h-72 rounded-full bg-orange-500/10 blur-3xl pointer-events-none animate-pulse-glow" />
       <div className="absolute bottom-10 -right-10 w-80 h-80 rounded-full bg-purple-500/10 blur-3xl pointer-events-none animate-pulse-glow" />

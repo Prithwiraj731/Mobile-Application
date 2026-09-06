@@ -109,6 +109,21 @@ public class MainActivity extends BridgeActivity {
             WindowManager.LayoutParams.FLAG_SECURE
         );
 
+        // Native Status Bar Insets: Keep app below notification bar with sleek dark status bar
+        android.view.Window window = getWindow();
+        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        window.setStatusBarColor(android.graphics.Color.parseColor("#09090b"));
+
+        android.view.View contentView = findViewById(android.R.id.content);
+        if (contentView != null) {
+            androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(contentView, (v, insets) -> {
+                androidx.core.graphics.Insets statusBarInsets = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.statusBars());
+                v.setPadding(0, statusBarInsets.top, 0, 0);
+                return insets;
+            });
+        }
+
         // Native Download Manager integration for Android WebView
         try {
             WebView webView = getBridge() != null ? getBridge().getWebView() : null;

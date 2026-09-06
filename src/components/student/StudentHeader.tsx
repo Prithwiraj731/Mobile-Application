@@ -25,7 +25,12 @@ export function StudentHeader({ profile, planCode = "FREE" }: StudentHeaderProps
   const displayName = profile?.full_name?.split(" ")[0] || "Student";
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between px-4 sm:px-6 py-3 bg-[#0d0c0d]/90 backdrop-blur-xl border-b border-white/5">
+    <header
+      className="sticky top-0 z-30 flex min-h-16 w-full items-center justify-between px-4 sm:px-6 py-3 bg-[#0d0c0d]/90 backdrop-blur-xl border-b border-white/5"
+      style={{
+        paddingTop: "max(env(safe-area-inset-top, 0px), 12px)",
+      }}
+    >
       {/* Left: User Profile Avatar & Name (Matches Reference Screenshot) */}
       <Link href="/dashboard" className="flex items-center gap-3 group active:scale-95 transition-transform">
         <div className="relative">
