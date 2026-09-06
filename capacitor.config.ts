@@ -13,20 +13,20 @@ import type { CapacitorConfig } from '@capacitor/cli';
  * For Production Release:
  * - Set url to your deployed production domain (e.g., https://your-domain.com)
  */
-const isDev = process.env.NODE_ENV !== 'production';
+const isDev = process.env.NODE_ENV === 'development';
 
 const config: CapacitorConfig = {
   appId: 'com.pabirpaul.tuition',
   appName: "Pabir Paul's Tuition",
   webDir: 'public',
   server: {
-    // Connects to local Next.js server in dev mode, or override with CAP_SERVER_URL
-    url: process.env.CAP_SERVER_URL || (isDev ? 'http://10.0.2.2:3000' : undefined),
-    cleartext: true,
+    // Uses live production Render URL by default, or local dev if overridden
+    url: process.env.CAP_SERVER_URL || (isDev ? 'http://10.0.2.2:3000' : 'https://pabir-pauls-tution.onrender.com'),
+    cleartext: isDev,
     androidScheme: 'https'
   },
   android: {
-    allowMixedContent: true,
+    allowMixedContent: isDev,
     captureInput: true,
     webContentsDebuggingEnabled: isDev
   }
