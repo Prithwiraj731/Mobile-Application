@@ -58,100 +58,14 @@ function ensureDirectories() {
   }
 }
 
-export const DEFAULT_COURSES: StoredCourse[] = [
-  {
-    id: "c-bcom-sem1",
-    title: "B.COM Semester 1 - Financial Accounting & Regulatory Framework",
-    slug: "bcom-semester-1",
-    code: "BCOM-SEM1",
-    program: "BCOM",
-    semester: "Semester 1",
-    description: "Official study materials, syllabus modules, and lecture curriculum for B.COM Semester 1.",
-    thumbnail_url: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=600&auto=format&fit=crop&q=80",
-    is_published: true,
-    order_index: 1,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "c-bcom-sem2",
-    title: "B.COM Semester 2 - Corporate Accounting & Company Law",
-    slug: "bcom-semester-2",
-    code: "BCOM-SEM2",
-    program: "BCOM",
-    semester: "Semester 2",
-    description: "Official study materials, share capital notes, and lecture curriculum for B.COM Semester 2.",
-    thumbnail_url: "https://images.unsplash.com/photo-1450133064473-71024230f91b?w=600&auto=format&fit=crop&q=80",
-    is_published: true,
-    order_index: 2,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "c-bcom-sem3",
-    title: "B.COM Semester 3 - Cost & Management Accounting",
-    slug: "bcom-semester-3",
-    code: "BCOM-SEM3",
-    program: "BCOM",
-    semester: "Semester 3",
-    description: "Official study materials, cost sheets, and problem sets for B.COM Semester 3.",
-    thumbnail_url: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&auto=format&fit=crop&q=80",
-    is_published: true,
-    order_index: 3,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "c-bcom-sem4",
-    title: "B.COM Semester 4 - Direct & Indirect Taxation",
-    slug: "bcom-semester-4",
-    code: "BCOM-SEM4",
-    program: "BCOM",
-    semester: "Semester 4",
-    description: "Official study materials, computation rules, and GST modules for B.COM Semester 4.",
-    thumbnail_url: "https://images.unsplash.com/photo-1586486855514-8c633cc6fd38?w=600&auto=format&fit=crop&q=80",
-    is_published: true,
-    order_index: 4,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "c-bcom-sem5",
-    title: "B.COM Semester 5 - Auditing & Corporate Governance",
-    slug: "bcom-semester-5",
-    code: "BCOM-SEM5",
-    program: "BCOM",
-    semester: "Semester 5",
-    description: "Official study materials, verification techniques, and standards for B.COM Semester 5.",
-    thumbnail_url: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600&auto=format&fit=crop&q=80",
-    is_published: true,
-    order_index: 5,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: "c-bcom-sem6",
-    title: "B.COM Semester 6 - Financial Management & Analysis",
-    slug: "bcom-semester-6",
-    code: "BCOM-SEM6",
-    program: "BCOM",
-    semester: "Semester 6",
-    description: "Official study materials, capital budgeting, and working capital guides for B.COM Semester 6.",
-    thumbnail_url: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=600&auto=format&fit=crop&q=80",
-    is_published: true,
-    order_index: 6,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-];
-
+export const DEFAULT_COURSES: StoredCourse[] = [];
 export const DEFAULT_MATERIALS: MaterialWithDetails[] = [];
 
 // Initial seed builder
 function getInitialData(): AppDataSchema {
   return {
     users: [...MOCK_USERS],
-    courses: [...DEFAULT_COURSES],
+    courses: [],
     materials: [],
     lastUpdated: new Date().toISOString(),
   };
@@ -169,7 +83,7 @@ function readData(): AppDataSchema {
   try {
     const raw = fs.readFileSync(DATA_FILE, "utf-8");
     const parsed = JSON.parse(raw);
-    if (!parsed.courses || parsed.courses.length === 0) parsed.courses = [...DEFAULT_COURSES];
+    if (!parsed.courses) parsed.courses = [];
     if (!parsed.materials) parsed.materials = [];
     if (!parsed.users) parsed.users = [];
 
