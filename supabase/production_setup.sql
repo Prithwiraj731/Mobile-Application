@@ -217,47 +217,58 @@ ALTER TABLE public.student_subscriptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.access_logs ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: Users read own profile, Admins read/manage all
+DROP POLICY IF EXISTS "Users can read own profile" ON public.profiles;
 CREATE POLICY "Users can read own profile" ON public.profiles
     FOR SELECT USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Admins have full access to profiles" ON public.profiles;
 CREATE POLICY "Admins have full access to profiles" ON public.profiles
     FOR ALL USING (
         EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
     );
 
 -- Courses/Curriculum: Published courses are readable by approved users
+DROP POLICY IF EXISTS "Approved users can read published courses" ON public.courses;
 CREATE POLICY "Approved users can read published courses" ON public.courses
     FOR SELECT USING (is_published = true);
 
+DROP POLICY IF EXISTS "Admins have full access to courses" ON public.courses;
 CREATE POLICY "Admins have full access to courses" ON public.courses
     FOR ALL USING (
         EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
     );
 
+DROP POLICY IF EXISTS "Approved users can read subjects" ON public.subjects;
 CREATE POLICY "Approved users can read subjects" ON public.subjects
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admins have full access to subjects" ON public.subjects;
 CREATE POLICY "Admins have full access to subjects" ON public.subjects
     FOR ALL USING (
         EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
     );
 
+DROP POLICY IF EXISTS "Approved users can read chapters" ON public.chapters;
 CREATE POLICY "Approved users can read chapters" ON public.chapters
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admins have full access to chapters" ON public.chapters;
 CREATE POLICY "Admins have full access to chapters" ON public.chapters
     FOR ALL USING (
         EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
     );
 
+DROP POLICY IF EXISTS "Approved users can read topics" ON public.topics;
 CREATE POLICY "Approved users can read topics" ON public.topics
     FOR SELECT USING (true);
 
+DROP POLICY IF EXISTS "Admins have full access to topics" ON public.topics;
 CREATE POLICY "Admins have full access to topics" ON public.topics
     FOR ALL USING (
         EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
     );
 
+DROP POLICY IF EXISTS "Approved students can view published materials" ON public.materials;
 CREATE POLICY "Approved students can view published materials" ON public.materials
     FOR SELECT USING (
         status = 'published' AND EXISTS (
@@ -265,15 +276,18 @@ CREATE POLICY "Approved students can view published materials" ON public.materia
         )
     );
 
+DROP POLICY IF EXISTS "Admins have full access to materials" ON public.materials;
 CREATE POLICY "Admins have full access to materials" ON public.materials
     FOR ALL USING (
         EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('admin', 'super_admin'))
     );
 
+DROP POLICY IF EXISTS "Public can view subscription plans" ON public.subscription_plans;
 CREATE POLICY "Public can view subscription plans" ON public.subscription_plans
     FOR SELECT USING (is_active = true);
 
 -- Storage bucket access: Admins manage storage
+DROP POLICY IF EXISTS "Admins have full access to study materials bucket" ON storage.objects;
 CREATE POLICY "Admins have full access to study materials bucket" ON storage.objects
     FOR ALL USING (
         bucket_id = 'study-materials'
