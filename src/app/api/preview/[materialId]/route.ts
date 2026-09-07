@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { DataStore } from "@/lib/data-store";
+import { DataStore, parseEnrollment } from "@/lib/data-store";
 import { canAccessMaterial } from "@/lib/security/access-control";
 
 export async function GET(
@@ -10,6 +10,10 @@ export async function GET(
   try {
     const materialId = params.materialId;
     const material = DataStore.getMaterialById(materialId);
+
+    if (!material) {
+      return NextResponse.json({ error: "Material not found." }, { status: 404 });
+    }
 
     // 1. Check user session from cookies
     const cookieStore = cookies();
@@ -36,10 +40,44 @@ export async function GET(
         );
       }
 
+      // Check Program and Semester scoping for students
+      if (sessionUser.role !== "admin" && sessionUser.role !== "super_admin") {
+        const userEnrollment = parseEnrollment(sessionUser.address);
+        const studentProgram = (sessionUser.program || userEnrollment.program || "BCOM").toUpperCase();
+        const studentSemester = (sessionUser.semester || userEnrollment.semester || "Semester 1").toLowerCase();
+
+        const matProg = (
+          (material as any).program ||
+          (material.topic as any)?.chapter?.subject?.course?.program ||
+          "BCOM"
+        ).toUpperCase();
+
+        const matSem = (
+          (material as any).semester ||
+          (material.topic as any)?.title ||
+          (material.topic as any)?.chapter?.subject?.course?.semester ||
+          "Semester 1"
+        ).toLowerCase();
+
+        const programMatches = studentProgram === matProg;
+        const semesterMatches =
+          studentSemester.includes(matSem) ||
+          matSem.includes(studentSemester);
+
+        if (!programMatches || !semesterMatches) {
+          return NextResponse.json(
+            {
+              error: `Access Restricted: This note is for ${matProg} (${matSem.toUpperCase()}). Your registered batch is ${studentProgram} (${studentSemester.toUpperCase()}).`,
+            },
+            { status: 403 }
+          );
+        }
+      }
+
       const sessionTraceId = `SEC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
       const watermarkText = `${sessionUser.full_name} • ${sessionUser.email} • Pabir Paul's Tuition • Session #${sessionTraceId}`;
 
-      let signedUrl = material.file?.file_path || undefined;
+      const signedUrl = `/api/preview/${materialId}/stream?trace=${sessionTraceId}`;
 
       return NextResponse.json({
         success: true,

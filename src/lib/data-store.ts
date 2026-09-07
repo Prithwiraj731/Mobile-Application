@@ -6,6 +6,20 @@ import { MaterialWithDetails, Profile, AccessLevel, MaterialType, Course } from 
 export interface StoredUser extends Profile {
   demoPassword?: string;
   planCode?: "FREE" | "PRO" | "PREMIUM";
+  program?: string;
+  semester?: string;
+}
+
+export function parseEnrollment(address?: string | null): { program: string; semester: string } {
+  if (!address) return { program: "BCOM", semester: "Semester 1" };
+  const match = address.match(/(BCOM|MCOM|CA|CMA)\s*-\s*([A-Za-z0-9\s]+?)(?:\s*\(|$)/i);
+  if (match) {
+    return {
+      program: match[1].toUpperCase(),
+      semester: match[2].trim(),
+    };
+  }
+  return { program: "BCOM", semester: "Semester 1" };
 }
 
 export interface StoredCourse {
@@ -69,6 +83,38 @@ function readData(): AppDataSchema {
     if (!parsed.courses) parsed.courses = [];
     if (!parsed.materials) parsed.materials = [];
     if (!parsed.users) parsed.users = [];
+
+    // Ensure all users have program and semester
+    parsed.users = parsed.users.map((u: StoredUser) => {
+      if (!u.program || !u.semester) {
+        const parsedInfo = parseEnrollment(u.address);
+        return {
+          ...u,
+          program: u.program || parsedInfo.program,
+          semester: u.semester || parsedInfo.semester,
+        };
+      }
+      return u;
+    });
+
+    // Ensure all materials have top-level program and semester
+    parsed.materials = parsed.materials.map((m: any) => {
+      const prog =
+        m.program ||
+        m.topic?.chapter?.subject?.course?.program ||
+        "BCOM";
+      const sem =
+        m.semester ||
+        m.topic?.title ||
+        m.topic?.chapter?.subject?.course?.semester ||
+        "Semester 1";
+      return {
+        ...m,
+        program: prog,
+        semester: sem,
+      };
+    });
+
     return parsed;
   } catch (err) {
     console.error("Error reading data store file, resetting to defaults:", err);
@@ -139,6 +185,8 @@ export const DataStore = {
     password?: string;
     phoneNumber?: string;
     address?: string;
+    program?: string;
+    semester?: string;
     role?: "student" | "admin" | "super_admin";
     status?: "pending_approval" | "approved" | "rejected" | "suspended";
     planCode?: "FREE" | "PRO" | "PREMIUM";
@@ -151,12 +199,18 @@ export const DataStore = {
       throw new Error(`An account with email ${params.email} is already registered.`);
     }
 
+    const parsedEnrollment = parseEnrollment(params.address);
+    const finalProgram = params.program || parsedEnrollment.program;
+    const finalSemester = params.semester || parsedEnrollment.semester;
+
     const newUser: StoredUser = {
       id: `u-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 6)}`,
       full_name: params.fullName,
       email: params.email,
       phone_number: params.phoneNumber || null,
-      address: params.address || null,
+      address: params.address || `${finalProgram} - ${finalSemester}`,
+      program: finalProgram,
+      semester: finalSemester,
       role: params.role || "student",
       status: params.status || (params.role === "admin" ? "approved" : "pending_approval"),
       avatar_url: null,
@@ -234,6 +288,29 @@ export const DataStore = {
 
     if (filter?.type && filter.type !== "all") {
       result = result.filter((m) => m.type === filter.type);
+    }
+
+    if (filter?.program && filter.program !== "all") {
+      const p = filter.program.toLowerCase();
+      result = result.filter((m) => {
+        const prog =
+          (m as any).program ||
+          (m.topic as any)?.chapter?.subject?.course?.program ||
+          "";
+        return prog.toLowerCase() === p;
+      });
+    }
+
+    if (filter?.semester && filter.semester !== "all") {
+      const s = filter.semester.toLowerCase();
+      result = result.filter((m) => {
+        const sem =
+          (m as any).semester ||
+          (m.topic as any)?.title ||
+          (m.topic as any)?.chapter?.subject?.course?.semester ||
+          "";
+        return sem.toLowerCase().includes(s) || s.includes(sem.toLowerCase());
+      });
     }
 
     if (filter?.search) {
@@ -410,11 +487,14 @@ export const DataStore = {
       targetCourse = data.courses[0];
     }
 
-    const courseTitle = targetCourse?.title || params.courseTitle || `${params.program || "B.COM"} ${params.semester || "Semester 1"} Coursework`;
+    const resolvedProgram = params.program || targetCourse?.program || "BCOM";
+    const resolvedSemester = params.semester || targetCourse?.semester || "Semester 1";
+
+    const courseTitle = targetCourse?.title || params.courseTitle || `${resolvedProgram} ${resolvedSemester} Coursework`;
     const courseId = targetCourse?.id || `c-default-${Date.now()}`;
     const courseSlug = targetCourse?.slug || "commerce-coursework";
 
-    const newMaterial: MaterialWithDetails = {
+    const newMaterial: any = {
       id: materialId,
       topic_id: `t-${Date.now()}`,
       title: params.title,
@@ -427,10 +507,12 @@ export const DataStore = {
       created_by_admin_id: params.createdById || "u-admin-master",
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      program: resolvedProgram,
+      semester: resolvedSemester,
       topic: {
         id: `t-${Date.now()}`,
         chapter_id: `ch-${Date.now()}`,
-        title: params.semester || "General Coursework",
+        title: resolvedSemester || "General Coursework",
         slug: "general-coursework",
         description: "",
         order_index: 1,
@@ -459,6 +541,8 @@ export const DataStore = {
               title: targetCourse ? targetCourse.title : courseTitle,
               slug: targetCourse ? targetCourse.slug : courseSlug,
               code: targetCourse ? targetCourse.code : "COURSE-01",
+              program: targetCourse ? targetCourse.program : resolvedProgram,
+              semester: targetCourse ? targetCourse.semester : resolvedSemester,
               description: targetCourse ? targetCourse.description : "",
               thumbnail_url: targetCourse?.thumbnail_url ?? null,
               is_published: targetCourse ? targetCourse.is_published : true,

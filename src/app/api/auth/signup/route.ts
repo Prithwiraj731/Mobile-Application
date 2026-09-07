@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { fullName, email, password, confirmPassword, phoneNumber, address } = body;
+    const { fullName, email, password, confirmPassword, phoneNumber, address, program, semester } = body;
 
     // Validation
     if (!fullName || !email || !password) {
@@ -46,6 +46,8 @@ export async function POST(request: Request) {
       password,
       phoneNumber: phoneNumber?.trim(),
       address: address?.trim(),
+      program: program?.trim(),
+      semester: semester?.trim(),
       role: "student",
       status: "pending_approval",
     });
@@ -62,6 +64,8 @@ export async function POST(request: Request) {
             full_name: fullName,
             phone_number: phoneNumber || null,
             address: address || null,
+            program: program || null,
+            semester: semester || null,
             role: "student",
           },
         },

@@ -1,12 +1,29 @@
 import { NextResponse } from "next/server";
-import { DataStore } from "@/lib/data-store";
+import { cookies } from "next/headers";
+import { DataStore, parseEnrollment } from "@/lib/data-store";
 
 export async function GET(request: Request) {
   try {
+    const cookieStore = cookies();
+    const demoCookie = cookieStore.get("demo_user_session")?.value;
+    let sessionUser: any = null;
+    if (demoCookie) {
+      try {
+        sessionUser = JSON.parse(decodeURIComponent(demoCookie));
+      } catch {}
+    }
+
     const { searchParams } = new URL(request.url);
-    const program = searchParams.get("program") || undefined;
-    const semester = searchParams.get("semester") || undefined;
+    let program = searchParams.get("program") || undefined;
+    let semester = searchParams.get("semester") || undefined;
     const search = searchParams.get("search") || undefined;
+
+    // If caller is student, restrict to their registered program & semester
+    if (sessionUser && sessionUser.role !== "admin" && sessionUser.role !== "super_admin") {
+      const parsed = parseEnrollment(sessionUser.address);
+      program = sessionUser.program || parsed.program || "BCOM";
+      semester = sessionUser.semester || parsed.semester || "Semester 1";
+    }
 
     const courses = DataStore.getCourses({
       program,

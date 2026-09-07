@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Clock, ShieldAlert, XCircle, ArrowLeft, RefreshCw, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { BackButton } from "@/components/ui/BackButton";
 
 function PendingContent() {
   const searchParams = useSearchParams();
@@ -16,6 +17,10 @@ function PendingContent() {
 
   return (
     <div className="w-full max-w-lg space-y-6">
+      <div className="flex items-center justify-between">
+        <BackButton fallbackHref="/login" label="Back to Login" />
+      </div>
+
       {/* Brand Header */}
       <div className="text-center space-y-2">
         <Link href="/" className="inline-flex items-center gap-2 group">

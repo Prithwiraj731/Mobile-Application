@@ -46,6 +46,8 @@ export default function StudentDashboardPage() {
   const [courses, setCourses] = React.useState<any[]>([]);
   const [materials, setMaterials] = React.useState<MaterialWithDetails[]>([]);
   const [isLoadingMaterials, setIsLoadingMaterials] = React.useState(false);
+  const [studentBatch, setStudentBatch] = React.useState<{ program: string; semester: string } | null>(null);
+  const [restrictedNotice, setRestrictedNotice] = React.useState<string | null>(null);
 
   const handleSimulateTierChange = (rank: number) => {
     setUserPlanRank(rank);
@@ -61,24 +63,30 @@ export default function StudentDashboardPage() {
 
     try {
       const res = await fetch(`/api/preview/${material.id}`);
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setRestrictedNotice(
+          data.error ||
+            "Access Restricted: This study material belongs to another batch/semester."
+        );
+        return;
+      }
+
+      if (data.signedUrl) {
         setPreviewToken(data.signedUrl);
-        setWatermarkText(data.watermarkText || `Student • ${new Date().toLocaleDateString()} • Session #SEC-LIVE`);
+        setWatermarkText(
+          data.watermarkText ||
+            `Student • ${new Date().toLocaleDateString()} • Session #SEC-LIVE`
+        );
         setSessionTraceId(data.sessionTraceId || "SEC-DEV-TRACER");
+        setIsViewerOpen(true);
       } else {
-        const trace = `SEC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-        setPreviewToken(material.file?.file_path ? `/api/preview/${material.id}/stream` : undefined);
-        setWatermarkText(`Verified Student • Pabir Paul Tuition • ${new Date().toLocaleDateString()} • Session #${trace}`);
-        setSessionTraceId(trace);
+        setRestrictedNotice("Preview stream could not be generated for this material.");
       }
     } catch {
-      const trace = `SEC-${Date.now().toString(36).toUpperCase()}`;
-      setWatermarkText(`Verified Student • Pabir Paul Tuition • Session #${trace}`);
-      setSessionTraceId(trace);
+      setRestrictedNotice("Network error initiating secure preview session.");
     }
-
-    setIsViewerOpen(true);
   };
 
   const handleUpgradePrompt = (requiredLevel: string) => {
@@ -105,12 +113,25 @@ export default function StudentDashboardPage() {
     const fetchData = async () => {
       setIsLoadingMaterials(true);
       try {
-        const [matRes, courseRes] = await Promise.all([
+        const [meRes, matRes, courseRes] = await Promise.all([
+          fetch("/api/auth/me"),
           fetch("/api/materials"),
           fetch("/api/courses"),
         ]);
-        const matData = await matRes.json();
-        const courseData = await courseRes.json();
+        const meData = await meRes.json().catch(() => ({}));
+        const matData = await matRes.json().catch(() => ({}));
+        const courseData = await courseRes.json().catch(() => ({}));
+
+        if (meRes.ok && meData.authenticated && meData.profile) {
+          const prof = meData.profile;
+          const isStudent = prof.role !== "admin" && prof.role !== "super_admin";
+          if (isStudent && prof.program && prof.semester) {
+            setStudentBatch({ program: prof.program, semester: prof.semester });
+            setSelectedProgram(prof.program as any);
+            setSelectedSemester(prof.semester);
+          }
+        }
+
         if (matRes.ok && Array.isArray(matData.materials)) {
           setMaterials(matData.materials);
         }
@@ -254,11 +275,49 @@ export default function StudentDashboardPage() {
         </div>
       </div>
 
+      {/* Enrolled Batch Status Banner */}
+      {studentBatch && (
+        <div className="relative z-10 rounded-3xl bg-gradient-to-r from-orange-500/15 via-amber-500/10 to-transparent border border-orange-500/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 sm:h-11 sm:w-11 rounded-2xl bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center shrink-0 shadow-inner">
+              <GraduationCap className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-400 bg-orange-500/20 px-2.5 py-0.5 rounded-full border border-orange-500/30">
+                  ENROLLED BATCH
+                </span>
+                <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Active Clearance
+                </span>
+              </div>
+              <h2 className="text-base sm:text-lg font-black text-white mt-1 tracking-tight">
+                {studentBatch.program} &bull; {studentBatch.semester}
+              </h2>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            {(selectedProgram !== studentBatch.program || (selectedSemester !== studentBatch.semester && selectedSemester !== "all")) && (
+              <button
+                onClick={() => {
+                  setSelectedProgram(studentBatch.program as any);
+                  setSelectedSemester(studentBatch.semester);
+                }}
+                className="px-3.5 py-1.5 rounded-full text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 hover:bg-orange-500/20 transition-all active:scale-95"
+              >
+                Reset to My Batch ({studentBatch.semester})
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 4. Stream & Semester Filter (Commerce Tracks) */}
       <div className="space-y-2.5 relative z-10">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
           {COMMERCE_PROGRAMS.map((prog) => {
             const isSelected = selectedProgram === prog.id;
+            const isEnrolledProg = studentBatch?.program === prog.id;
             return (
               <button
                 key={prog.id}
@@ -270,6 +329,11 @@ export default function StudentDashboardPage() {
                 }`}
               >
                 <span>{prog.name}</span>
+                {isEnrolledProg && (
+                  <span className="text-[9px] bg-orange-500/20 text-orange-400 font-mono px-1.5 py-0.5 rounded-full border border-orange-500/30 font-bold">
+                    My Stream
+                  </span>
+                )}
                 <span className="text-[10px] opacity-75 font-mono">
                   {prog.id === "BCOM" ? "(8 Sem)" : prog.id === "MCOM" ? "(4 Sem)" : "(Prof)"}
                 </span>
@@ -293,17 +357,26 @@ export default function StudentDashboardPage() {
 
           {currentProgramObj.semestersOrGroups.map((sem) => {
             const isSelected = selectedSemester === sem;
+            const isMySem =
+              studentBatch?.program === selectedProgram &&
+              (studentBatch?.semester.toLowerCase().includes(sem.toLowerCase()) ||
+               sem.toLowerCase().includes(studentBatch?.semester.toLowerCase() || ""));
             return (
               <button
                 key={sem}
                 onClick={() => setSelectedSemester(sem)}
-                className={`px-3 py-1 rounded-full whitespace-nowrap transition-all duration-200 text-[11px] font-semibold active:scale-95 ${
+                className={`px-3 py-1 rounded-full whitespace-nowrap transition-all duration-200 text-[11px] font-semibold active:scale-95 flex items-center gap-1.5 ${
                   isSelected
                     ? "bg-orange-500 text-white shadow-md shadow-orange-500/40"
                     : "bg-[#181516] text-surface-400 hover:text-white border border-white/5"
                 }`}
               >
-                {sem}
+                <span>{sem}</span>
+                {isMySem && (
+                  <span className="text-[9px] bg-white/20 px-1.5 py-0.5 rounded-full font-mono font-bold">
+                    Enrolled
+                  </span>
+                )}
               </button>
             );
           })}
@@ -494,6 +567,33 @@ export default function StudentDashboardPage() {
                 View Tuition Passes →
               </button>
             </Link>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Batch Restriction Clearance Modal */}
+      <Modal
+        isOpen={!!restrictedNotice}
+        onClose={() => setRestrictedNotice(null)}
+        title="Batch Clearance Required"
+      >
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-[#181516] border border-amber-500/20 flex items-start gap-3">
+            <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
+              <Lock className="h-5 w-5" />
+            </div>
+            <div className="space-y-1">
+              <h4 className="text-sm font-bold text-white">Semester Scoped Resource</h4>
+              <p className="text-xs text-surface-300 leading-relaxed">
+                {restrictedNotice}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" size="sm" onClick={() => setRestrictedNotice(null)}>
+              Understand
+            </Button>
           </div>
         </div>
       </Modal>

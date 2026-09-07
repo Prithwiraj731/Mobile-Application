@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GraduationCap, ShieldCheck, ArrowRight, Lock, AlertCircle, Clock } from "lucide-react";
+import { BackButton } from "@/components/ui/BackButton";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -74,6 +75,10 @@ export default function LoginPage() {
       <div className="absolute bottom-1/4 -right-20 h-72 w-72 rounded-full bg-purple-500/10 blur-3xl pointer-events-none animate-pulse-glow" />
 
       <div className="w-full max-w-md space-y-6 relative z-10">
+        <div className="flex items-center justify-start">
+          <BackButton fallbackHref="/" label="Back to Home" />
+        </div>
+
         {/* 3D Crest & Headline */}
         <div className="text-center space-y-3">
           <div className="relative inline-flex items-center justify-center">

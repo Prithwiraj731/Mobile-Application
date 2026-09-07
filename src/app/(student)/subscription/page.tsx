@@ -6,6 +6,8 @@ import { MOCK_PLANS } from "@/lib/mock-data";
 import { PlanBadge } from "@/components/student/PlanBadge";
 import { Button } from "@/components/ui/Button";
 
+import { BackButton } from "@/components/ui/BackButton";
+
 export default function SubscriptionPage() {
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300 pb-24 relative">
@@ -13,10 +15,13 @@ export default function SubscriptionPage() {
       <div className="absolute top-0 right-10 w-80 h-80 rounded-full bg-orange-500/10 blur-3xl pointer-events-none animate-pulse-glow" />
       <div className="absolute bottom-10 left-10 w-80 h-80 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
 
-      <div className="relative z-10">
-        <div className="flex items-center gap-2 text-orange-400 text-xs font-mono mb-1">
-          <GraduationCap className="h-4 w-4" />
-          <span className="tracking-wider uppercase font-bold">COMMERCE TUITION PASS CLEARANCE</span>
+      <div className="relative z-10 space-y-3">
+        <div className="flex items-center gap-3">
+          <BackButton fallbackHref="/dashboard" label="Return to Dashboard" />
+          <div className="flex items-center gap-2 text-orange-400 text-xs font-mono">
+            <GraduationCap className="h-4 w-4" />
+            <span className="tracking-wider uppercase font-bold">COMMERCE TUITION PASS CLEARANCE</span>
+          </div>
         </div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
           Tuition Pass & Batch Clearance 👑

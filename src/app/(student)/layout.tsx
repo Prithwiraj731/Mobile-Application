@@ -5,6 +5,7 @@ import { StudentSidebar } from "@/components/student/StudentSidebar";
 import { StudentBottomNav } from "@/components/student/StudentBottomNav";
 import { createClient } from "@/lib/supabase/server";
 import { MOCK_USERS } from "@/lib/mock-data";
+import { DataStore } from "@/lib/data-store";
 import { StudentSubscription, SubscriptionPlan } from "@/types";
 
 export default async function StudentLayout({
@@ -57,7 +58,9 @@ export default async function StudentLayout({
       const demoCookie = cookieStore.get("demo_user_session")?.value;
       if (demoCookie) {
         const demoUser = JSON.parse(decodeURIComponent(demoCookie));
-        const matched = MOCK_USERS.find((u) => u.id === demoUser.id || u.email === demoUser.email);
+        const storedUser = (demoUser.id ? DataStore.getUserById(demoUser.id) : null) ||
+                           (demoUser.email ? DataStore.getUsers().find((u) => u.email === demoUser.email) : null);
+        const matched = storedUser || MOCK_USERS.find((u) => u.id === demoUser.id || u.email === demoUser.email);
         profile = matched || demoUser;
         planCode = profile?.planCode || "FREE";
       }

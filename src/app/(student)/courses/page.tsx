@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { BookOpen, CheckCircle2, GraduationCap, Play, ArrowRight, Sparkles, RefreshCw } from "lucide-react";
+import { BackButton } from "@/components/ui/BackButton";
 import { COMMERCE_PROGRAMS } from "@/lib/mock-data";
 
 export default function CoursesPage() {
@@ -10,14 +11,26 @@ export default function CoursesPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [selectedProgram, setSelectedProgram] = React.useState<"BCOM" | "MCOM" | "CA" | "CMA">("BCOM");
   const [selectedSemester, setSelectedSemester] = React.useState<string>("all");
+  const [studentBatch, setStudentBatch] = React.useState<{ program: string; semester: string } | null>(null);
 
   React.useEffect(() => {
     setIsLoading(true);
-    fetch("/api/courses")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.courses && Array.isArray(data.courses)) {
-          setCourses(data.courses);
+    Promise.all([
+      fetch("/api/auth/me").then((r) => r.json().catch(() => ({}))),
+      fetch("/api/courses").then((r) => r.json().catch(() => ({}))),
+    ])
+      .then(([meData, courseData]) => {
+        if (meData.authenticated && meData.profile) {
+          const prof = meData.profile;
+          const isStudent = prof.role !== "admin" && prof.role !== "super_admin";
+          if (isStudent && prof.program && prof.semester) {
+            setStudentBatch({ program: prof.program, semester: prof.semester });
+            setSelectedProgram(prof.program);
+            setSelectedSemester(prof.semester);
+          }
+        }
+        if (courseData.courses && Array.isArray(courseData.courses)) {
+          setCourses(courseData.courses);
         }
       })
       .catch(() => {})
@@ -40,11 +53,15 @@ export default function CoursesPage() {
       <div className="absolute -top-10 -right-10 w-72 h-72 rounded-full bg-orange-500/10 blur-3xl pointer-events-none animate-pulse-glow" />
       <div className="absolute top-1/2 -left-10 w-80 h-80 rounded-full bg-purple-500/10 blur-3xl pointer-events-none" />
 
-      <div className="relative z-10">
-        <div className="flex items-center gap-2 text-orange-400 text-xs font-mono mb-1">
-          <GraduationCap className="h-4 w-4" />
-          <span className="tracking-wider uppercase font-bold">DEBRAJ TUTORIALS &bull; COMMERCE CURRICULUM</span>
+      <div className="relative z-10 space-y-4">
+        <div className="flex items-center justify-start">
+          <BackButton fallbackHref="/dashboard" label="Back to Dashboard" />
         </div>
+        <div>
+          <div className="flex items-center gap-2 text-orange-400 text-xs font-mono mb-1">
+            <GraduationCap className="h-4 w-4" />
+            <span className="tracking-wider uppercase font-bold">DEBRAJ TUTORIALS &bull; COMMERCE CURRICULUM</span>
+          </div>
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
           Tuition Batches & Semesters 📚
         </h1>
@@ -52,11 +69,48 @@ export default function CoursesPage() {
           Structured semester pathways and professional courses for B.COM, M.COM, CA, and CMA
         </p>
       </div>
+    </div>
+
+      {/* Enrolled Batch Banner */}
+      {studentBatch && (
+        <div className="relative z-10 rounded-3xl bg-gradient-to-r from-orange-500/15 via-amber-500/10 to-transparent border border-orange-500/30 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl backdrop-blur-md">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center shrink-0">
+              <GraduationCap className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-orange-400 bg-orange-500/20 px-2.5 py-0.5 rounded-full border border-orange-500/30">
+                  ENROLLED BATCH
+                </span>
+                <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Active Clearance
+                </span>
+              </div>
+              <h2 className="text-base sm:text-lg font-black text-white mt-1">
+                {studentBatch.program} &bull; {studentBatch.semester}
+              </h2>
+            </div>
+          </div>
+          {(selectedProgram !== studentBatch.program || (selectedSemester !== studentBatch.semester && selectedSemester !== "all")) && (
+            <button
+              onClick={() => {
+                setSelectedProgram(studentBatch.program as any);
+                setSelectedSemester(studentBatch.semester);
+              }}
+              className="px-3.5 py-1.5 rounded-full text-xs font-bold text-orange-400 bg-orange-500/10 border border-orange-500/30 hover:bg-orange-500/20 transition-all active:scale-95 self-start sm:self-auto"
+            >
+              Reset to My Batch ({studentBatch.semester})
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Program Selector Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 relative z-10">
         {COMMERCE_PROGRAMS.map((prog) => {
           const isSelected = selectedProgram === prog.id;
+          const isEnrolledProg = studentBatch?.program === prog.id;
           return (
             <button
               key={prog.id}
@@ -71,6 +125,11 @@ export default function CoursesPage() {
               }`}
             >
               <span>{prog.name}</span>
+              {isEnrolledProg && (
+                <span className="text-[9px] bg-orange-500/20 text-orange-400 font-mono px-1.5 py-0.5 rounded-full border border-orange-500/30 font-bold">
+                  My Stream
+                </span>
+              )}
               <span className="text-[10px] opacity-75 font-mono">
                 {prog.id === "BCOM" ? "(8 Sem)" : prog.id === "MCOM" ? "(4 Sem)" : "(Prof)"}
               </span>
@@ -94,17 +153,26 @@ export default function CoursesPage() {
 
         {currentProgramObj.semestersOrGroups.map((sem) => {
           const isSelected = selectedSemester === sem;
+          const isMySem =
+            studentBatch?.program === selectedProgram &&
+            (studentBatch?.semester.toLowerCase().includes(sem.toLowerCase()) ||
+             sem.toLowerCase().includes(studentBatch?.semester.toLowerCase() || ""));
           return (
             <button
               key={sem}
               onClick={() => setSelectedSemester(sem)}
-              className={`px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all duration-200 text-[11px] font-semibold active:scale-95 ${
+              className={`px-3.5 py-1.5 rounded-full whitespace-nowrap transition-all duration-200 text-[11px] font-semibold active:scale-95 flex items-center gap-1.5 ${
                 isSelected
                   ? "bg-orange-500 text-white shadow-md shadow-orange-500/40"
                   : "bg-[#181516] text-surface-400 hover:text-white border border-white/5"
               }`}
             >
-              {sem}
+              <span>{sem}</span>
+              {isMySem && (
+                <span className="text-[9px] bg-white/20 px-1.5 py-0.5 rounded-full font-mono font-bold">
+                  Enrolled
+                </span>
+              )}
             </button>
           );
         })}

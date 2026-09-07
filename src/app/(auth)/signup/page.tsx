@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { COMMERCE_PROGRAMS } from "@/lib/mock-data";
+import { BackButton } from "@/components/ui/BackButton";
 
 export default function SignupPage() {
   const [fullName, setFullName] = React.useState("");
@@ -70,6 +71,8 @@ export default function SignupPage() {
           phoneNumber: phoneNumber.trim(),
           password,
           confirmPassword,
+          program: selectedProgram,
+          semester: selectedSemesterOrGroup,
           address: enrollmentDetails,
         }),
       });
@@ -101,6 +104,13 @@ export default function SignupPage() {
       <div className="absolute bottom-10 -right-10 w-80 h-80 rounded-full bg-purple-500/10 blur-3xl pointer-events-none animate-pulse-glow" />
 
       <div className="w-full max-w-lg space-y-6 relative z-10">
+        <div className="flex items-center justify-between">
+          <BackButton fallbackHref="/login" label="Back to Login" />
+          <Link href="/login" className="text-xs text-orange-400 font-semibold hover:underline">
+            Already registered? Sign In
+          </Link>
+        </div>
+
         {/* Brand Header */}
         <div className="text-center space-y-3">
           <Link href="/" className="inline-flex items-center justify-center group">

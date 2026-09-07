@@ -17,7 +17,12 @@ export function PdfViewer({ material, signedUrl }: PdfViewerProps) {
   const [isDownloading, setIsDownloading] = React.useState(false);
   const totalPages = material.file?.page_count || 6;
 
-  const isRealPdf = Boolean(signedUrl && (signedUrl.endsWith(".pdf") || signedUrl.includes("/uploads/")));
+  const isRealPdf = Boolean(
+    signedUrl &&
+      (signedUrl.includes("/stream") ||
+        signedUrl.endsWith(".pdf") ||
+        signedUrl.includes("/uploads/"))
+  );
 
   const handlePrevPage = () => setCurrentPage((p) => Math.max(1, p - 1));
   const handleNextPage = () => setCurrentPage((p) => Math.min(totalPages, p + 1));

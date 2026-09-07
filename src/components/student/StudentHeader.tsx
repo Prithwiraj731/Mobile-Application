@@ -2,9 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Bell, LogOut, Shield } from "lucide-react";
 import { PlanBadge } from "./PlanBadge";
+import { BackButton } from "@/components/ui/BackButton";
 import { Profile } from "@/types";
 
 export interface StudentHeaderProps {
@@ -14,6 +15,8 @@ export interface StudentHeaderProps {
 
 export function StudentHeader({ profile, planCode = "FREE" }: StudentHeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isSubPage = pathname && pathname !== "/dashboard";
 
   const handleLogout = async () => {
     try {
@@ -31,8 +34,12 @@ export function StudentHeader({ profile, planCode = "FREE" }: StudentHeaderProps
         paddingTop: "max(env(safe-area-inset-top, 0px), 12px)",
       }}
     >
-      {/* Left: User Profile Avatar & Name (Matches Reference Screenshot) */}
-      <Link href="/dashboard" className="flex items-center gap-3 group active:scale-95 transition-transform">
+      {/* Left: Optional Back Button + User Profile Avatar & Name */}
+      <div className="flex items-center gap-3">
+        {isSubPage && (
+          <BackButton fallbackHref="/dashboard" variant="icon" label="Back to Dashboard" />
+        )}
+        <Link href="/dashboard" className="flex items-center gap-3 group active:scale-95 transition-transform">
         <div className="relative">
           <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-amber-400 via-orange-500 to-amber-600 p-[1.5px] shadow-md shadow-orange-500/20">
             <div className="h-full w-full rounded-full bg-[#181516] flex items-center justify-center text-sm font-bold text-white overflow-hidden">
@@ -55,6 +62,7 @@ export function StudentHeader({ profile, planCode = "FREE" }: StudentHeaderProps
           </p>
         </div>
       </Link>
+    </div>
 
       {/* Right: Plan Clearance & Notification Bell (Matches Reference Screenshot) */}
       <div className="flex items-center gap-2.5">

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { DataStore } from "@/lib/data-store";
+import { DataStore, parseEnrollment } from "@/lib/data-store";
 import { createClient } from "@/lib/supabase/server";
 import { Profile } from "@/types";
 
@@ -55,6 +55,10 @@ export async function POST(request: Request) {
         );
       }
 
+      const parsedInfo = parseEnrollment(storedUser.address);
+      const program = storedUser.program || parsedInfo.program;
+      const semester = storedUser.semester || parsedInfo.semester;
+
       // User is approved! Create session cookie
       const sessionPayload = {
         id: storedUser.id,
@@ -63,14 +67,24 @@ export async function POST(request: Request) {
         role: storedUser.role,
         status: storedUser.status,
         planCode: storedUser.planCode || "FREE",
+        program,
+        semester,
       };
 
       const response = NextResponse.json({
         success: true,
-        user: { id: storedUser.id, email: storedUser.email, full_name: storedUser.full_name },
+        user: {
+          id: storedUser.id,
+          email: storedUser.email,
+          full_name: storedUser.full_name,
+          program,
+          semester,
+        },
         role: storedUser.role,
         status: storedUser.status,
         planCode: storedUser.planCode || "FREE",
+        program,
+        semester,
       });
 
       response.cookies.set("demo_user_session", JSON.stringify(sessionPayload), {
@@ -113,6 +127,10 @@ export async function POST(request: Request) {
           );
         }
 
+        const parsedInfo = parseEnrollment(profile?.address);
+        const program = user.user_metadata?.program || parsedInfo.program;
+        const semester = user.user_metadata?.semester || parsedInfo.semester;
+
         const sessionPayload = {
           id: user.id,
           email: user.email,
@@ -120,13 +138,24 @@ export async function POST(request: Request) {
           role,
           status,
           planCode: "FREE",
+          program,
+          semester,
         };
 
         const response = NextResponse.json({
           success: true,
-          user: { id: user.id, email: user.email, full_name: profile?.full_name },
+          user: {
+            id: user.id,
+            email: user.email,
+            full_name: profile?.full_name,
+            program,
+            semester,
+          },
           role,
           status,
+          planCode: "FREE",
+          program,
+          semester,
         });
 
         response.cookies.set("demo_user_session", JSON.stringify(sessionPayload), {

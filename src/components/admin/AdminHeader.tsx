@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { ShieldCheck, LogOut, Eye, GraduationCap } from "lucide-react";
+import { BackButton } from "@/components/ui/BackButton";
 import { Profile } from "@/types";
 
 export interface AdminHeaderProps {
@@ -12,6 +13,8 @@ export interface AdminHeaderProps {
 
 export function AdminHeader({ profile }: AdminHeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const isSubPage = pathname !== "/admin";
 
   const handleLogout = async () => {
     try {
@@ -22,8 +25,10 @@ export function AdminHeader({ profile }: AdminHeaderProps) {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-surface-800 bg-surface-950 px-3 sm:px-6 backdrop-blur-md">
-      {/* Brand & Administrative Tag */}
-      <div className="flex items-center gap-3">
+      {/* Brand & Administrative Tag with optional Back Button */}
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        {isSubPage && <BackButton fallbackHref="/admin" label="Back to Admin" />}
+
         <Link href="/admin" className="flex items-center gap-2.5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-rose-600 to-rose-500 text-white shadow-sm shadow-rose-600/30">
             <ShieldCheck className="h-5 w-5" />

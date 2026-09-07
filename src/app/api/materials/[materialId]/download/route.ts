@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { DataStore } from "@/lib/data-store";
+import { DataStore, parseEnrollment } from "@/lib/data-store";
 import fs from "fs";
 import path from "path";
 
@@ -40,6 +40,40 @@ export async function GET(
         { error: "Your account is pending admin approval. You will be able to download study materials once verified." },
         { status: 403 }
       );
+    }
+
+    // Check program and semester scoping for students
+    if (sessionUser && sessionUser.role !== "admin" && sessionUser.role !== "super_admin") {
+      const userEnrollment = parseEnrollment(sessionUser.address);
+      const studentProgram = (sessionUser.program || userEnrollment.program || "BCOM").toUpperCase();
+      const studentSemester = (sessionUser.semester || userEnrollment.semester || "Semester 1").toLowerCase();
+
+      const matProg = (
+        (material as any).program ||
+        (material.topic as any)?.chapter?.subject?.course?.program ||
+        "BCOM"
+      ).toUpperCase();
+
+      const matSem = (
+        (material as any).semester ||
+        (material.topic as any)?.title ||
+        (material.topic as any)?.chapter?.subject?.course?.semester ||
+        "Semester 1"
+      ).toLowerCase();
+
+      const programMatches = studentProgram === matProg;
+      const semesterMatches =
+        studentSemester.includes(matSem) ||
+        matSem.includes(studentSemester);
+
+      if (!programMatches || !semesterMatches) {
+        return NextResponse.json(
+          {
+            error: `Access Restricted: This note belongs to ${matProg} (${matSem.toUpperCase()}). Your registered batch is ${studentProgram} (${studentSemester.toUpperCase()}).`,
+          },
+          { status: 403 }
+        );
+      }
     }
 
     // Common CORS and caching headers for reliable downloads
